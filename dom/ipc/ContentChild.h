@@ -40,6 +40,7 @@ class PrefObserver;
 class ConsoleListener;
 class PStorageChild;
 class ClonedMessageData;
+class ContentBridgeChild;
 
 class ContentChild : public PContentChild
 {
@@ -269,6 +270,8 @@ public:
 
     BlobChild* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
 
+    ContentBridgeChild* GetContentBridge();
+
 protected:
     virtual bool RecvPBrowserConstructor(PBrowserChild* actor,
                                          const IPCTabContext& context,
@@ -278,6 +281,9 @@ private:
     virtual void ActorDestroy(ActorDestroyReason why) MOZ_OVERRIDE;
 
     virtual void ProcessingError(Result what) MOZ_OVERRIDE;
+
+    virtual PContentBridgeChild* AllocPContentBridgeChild() MOZ_OVERRIDE;
+    virtual bool DeallocPContentBridgeChild(PContentBridgeChild* aActor) MOZ_OVERRIDE;
 
     /**
      * Exit *now*.  Do not shut down XPCOM, do not pass Go, do not run

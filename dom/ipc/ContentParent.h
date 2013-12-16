@@ -57,6 +57,7 @@ class PStorageParent;
 class ClonedMessageData;
 class MemoryReport;
 class TabContext;
+class ContentBridgeParent;
 
 class ContentParent : public PContentParent
                     , public nsIObserver
@@ -140,6 +141,7 @@ public:
     bool DestroyTestShell(TestShellParent* aTestShell);
     TestShellParent* GetTestShellSingleton();
     jsipc::JavaScriptParent *GetCPOWManager();
+    ContentBridgeParent* GetContentBridge();
 
     void ReportChildAlreadyBlocked();
     bool RequestRunToCompletion();
@@ -222,6 +224,7 @@ public:
                                            const nsString& aPageURL,
                                            const bool& aIsAudio,
                                            const bool& aIsVideo) MOZ_OVERRIDE;
+
 protected:
     void OnChannelConnected(int32_t pid) MOZ_OVERRIDE;
     virtual void ActorDestroy(ActorDestroyReason why) MOZ_OVERRIDE;
@@ -407,6 +410,9 @@ private:
 
     virtual bool RecvReadPrefsArray(InfallibleTArray<PrefSetting>* aPrefs) MOZ_OVERRIDE;
     virtual bool RecvReadFontList(InfallibleTArray<FontListEntry>* retValue) MOZ_OVERRIDE;
+
+    virtual PContentBridgeParent* AllocPContentBridgeParent() MOZ_OVERRIDE;
+    virtual bool DeallocPContentBridgeParent(PContentBridgeParent* aActor) MOZ_OVERRIDE;
 
     virtual bool RecvReadPermissions(InfallibleTArray<IPC::Permission>* aPermissions) MOZ_OVERRIDE;
 

@@ -10,13 +10,15 @@ include protocol PBlob;
 include protocol PBluetooth;
 include protocol PBrowser;
 include protocol PCompositor;
+include protocol PContentBridge;
 include protocol PCrashReporter;
-include protocol PExternalHelperApp;
 include protocol PDeviceStorageRequest;
+include protocol PExternalHelperApp;
 include protocol PFMRadio;
 include protocol PHal;
 include protocol PImageBridge;
 include protocol PIndexedDB;
+include protocol PJavaScript;
 include protocol PMemoryReportRequest;
 include protocol PNecko;
 include protocol PSms;
@@ -24,7 +26,6 @@ include protocol PSpeechSynthesis;
 include protocol PStorage;
 include protocol PTelephony;
 include protocol PTestShell;
-include protocol PJavaScript;
 include DOMTypes;
 include JavaScriptTypes;
 include InputStreamParams;
@@ -206,12 +207,14 @@ intr protocol PContent
     manages PBlob;
     manages PBluetooth;
     manages PBrowser;
+    manages PContentBridge;
     manages PCrashReporter;
     manages PDeviceStorageRequest;
     manages PExternalHelperApp;
     manages PFMRadio;
     manages PHal;
     manages PIndexedDB;
+    manages PJavaScript;
     manages PMemoryReportRequest;
     manages PNecko;
     manages PSms;
@@ -219,7 +222,6 @@ intr protocol PContent
     manages PStorage;
     manages PTelephony;
     manages PTestShell;
-    manages PJavaScript;
 
 both:
     // Depending on exactly how the new browser is being created, it might be
@@ -251,7 +253,9 @@ both:
 
     async PJavaScript();
 
+    async PContentBridge();
 child:
+
     /**
      * Update OS process privileges to |privs|.  Can usually only be
      * performed zero or one times.  The child will abnormally exit if

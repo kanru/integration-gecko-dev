@@ -13,6 +13,7 @@
 #endif
 
 #include "ContentChild.h"
+#include "ContentBridgeChild.h"
 #include "CrashReporterChild.h"
 #include "TabChild.h"
 
@@ -1727,6 +1728,29 @@ ContentChild::RecvNuwaFork()
 #else
     return false; // Makes the underlying IPC channel abort.
 #endif
+}
+
+PContentBridgeChild*
+ContentChild::AllocPContentBridgeChild()
+{
+  return new ContentBridgeChild();
+}
+
+bool
+ContentChild::DeallocPContentBridgeChild(PContentBridgeChild* aActor)
+{
+  delete aActor;
+  return true;
+}
+
+ContentBridgeChild*
+ContentChild::GetContentBridge()
+{
+    if (ManagedPContentBridgeChild().Length()) {
+        return static_cast<ContentBridgeChild*>(ManagedPContentBridgeChild()[0]);
+    }
+    ContentBridgeChild* actor = static_cast<ContentBridgeChild*>(SendPContentBridgeConstructor());
+    return actor;
 }
 
 } // namespace dom

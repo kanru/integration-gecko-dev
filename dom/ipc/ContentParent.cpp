@@ -9,6 +9,7 @@
 #include "base/basictypes.h"
 
 #include "ContentParent.h"
+#include "ContentBridgeParent.h"
 
 #if defined(ANDROID) || defined(LINUX)
 # include <sys/time.h>
@@ -3344,6 +3345,29 @@ ContentParent::RecvBackUpXResources(const FileDescriptor& aXSocketFd)
     }
 #endif
     return true;
+}
+
+PContentBridgeParent*
+ContentParent::AllocPContentBridgeParent()
+{
+  return new ContentBridgeParent();
+}
+
+bool
+ContentParent::DeallocPContentBridgeParent(PContentBridgeParent* aActor)
+{
+  delete aActor;
+  return true;
+}
+
+ContentBridgeParent*
+ContentParent::GetContentBridge()
+{
+  if (ManagedPContentBridgeParent().Length()) {
+    return static_cast<ContentBridgeParent*>(ManagedPContentBridgeParent()[0]);
+  }
+  ContentBridgeParent* actor = static_cast<ContentBridgeParent*>(SendPContentBridgeConstructor());
+  return actor;
 }
 
 } // namespace dom
