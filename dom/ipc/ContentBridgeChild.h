@@ -9,6 +9,8 @@
 
 #include "mozilla/dom/PContentBridgeChild.h"
 
+#include "mozilla/dom/ipc/Blob.h"
+
 namespace mozilla {
 
 namespace jsipc {
@@ -21,16 +23,22 @@ class ContentChild;
 
 class ContentBridgeChild : public PContentBridgeChild
 {
+  NS_INLINE_DECL_REFCOUNTING(ContentBridgeChild)
+
   friend ContentChild;
 
 public:
   ContentBridgeChild() {}
   virtual ~ContentBridgeChild() {}
 
+  BlobChild* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
   jsipc::JavaScriptChild *GetCPOWManager();
 
 // IPDL methods
 public:
+  virtual PBlobChild* AllocPBlobChild(const BlobConstructorParams& aParams);
+  virtual bool DeallocPBlobChild(PBlobChild*);
+
   virtual jsipc::PJavaScriptChild* AllocPJavaScriptChild();
   virtual bool DeallocPJavaScriptChild(jsipc::PJavaScriptChild*);
 // end IPDL methods

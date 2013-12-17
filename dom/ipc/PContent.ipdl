@@ -203,7 +203,6 @@ intr protocol PContent
     child opens PBackground;
 
     manages PAsmJSCacheEntry;
-    manages PBlob;
     manages PBluetooth;
     manages PBrowser;
     manages PContentBridge;
@@ -246,8 +245,6 @@ both:
     // app; the child can only request privileges for an app which the child has
     // access to (in the form of a TabChild).
     async PBrowser(IPCTabContext context, uint32_t chromeFlags);
-
-    async PBlob(BlobConstructorParams params);
 
     async PContentBridge();
 child:

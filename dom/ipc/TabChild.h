@@ -48,6 +48,7 @@ namespace dom {
 class TabChild;
 class PContentDialogChild;
 class ClonedMessageData;
+class ContentChild;
 
 class TabChildGlobal : public nsDOMEventTargetHelper,
                        public nsIContentFrameMessageManager,

@@ -2321,7 +2321,7 @@ nsFrameLoader::DoSendAsyncMessage(JSContext* aCx,
   if (tabParent) {
     ClonedMessageData data;
     ContentParent* cp = tabParent->Manager();
-    if (!BuildClonedMessageDataForParent(cp, aData, data)) {
+    if (!BuildClonedMessageDataForParent(cp->GetContentBridge(), aData, data)) {
       return false;
     }
     InfallibleTArray<mozilla::jsipc::CpowEntry> cpows;

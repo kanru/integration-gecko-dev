@@ -4,8 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+include protocol PBlob;
 include protocol PContent;
 include protocol PJavaScript;
+include DOMTypes;
 
 namespace mozilla {
 namespace dom {
@@ -14,9 +16,11 @@ sync protocol PContentBridge
 {
     manager PContent;
 
+    manages PBlob;
     manages PJavaScript;
 
 both:
+    async PBlob(BlobConstructorParams params);
     async PJavaScript();
 
 child:

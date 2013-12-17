@@ -32,7 +32,8 @@ namespace mozilla {
 namespace dom {
 
 class ContentParent;
-class ContentChild;
+class ContentBridgeParent;
+class ContentBridgeChild;
 struct StructuredCloneData;
 class ClonedMessageData;
 class MessageManagerReporter;
@@ -99,10 +100,10 @@ public:
   }
 
 protected:
-  bool BuildClonedMessageDataForParent(ContentParent* aParent,
+  bool BuildClonedMessageDataForParent(ContentBridgeParent* aParent,
                                        const StructuredCloneData& aData,
                                        ClonedMessageData& aClonedData);
-  bool BuildClonedMessageDataForChild(ContentChild* aChild,
+  bool BuildClonedMessageDataForChild(ContentBridgeChild* aChild,
                                       const StructuredCloneData& aData,
                                       ClonedMessageData& aClonedData);
 };

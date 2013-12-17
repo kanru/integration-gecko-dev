@@ -2566,7 +2566,7 @@ TabChild::DoSendBlockingMessage(JSContext* aCx,
 {
   ContentChild* cc = Manager();
   ClonedMessageData data;
-  if (!BuildClonedMessageDataForChild(cc, aData, data)) {
+  if (!BuildClonedMessageDataForChild(cc->GetContentBridge(), aData, data)) {
     return false;
   }
   InfallibleTArray<CpowEntry> cpows;
@@ -2593,7 +2593,7 @@ TabChild::DoSendAsyncMessage(JSContext* aCx,
 {
   ContentChild* cc = Manager();
   ClonedMessageData data;
-  if (!BuildClonedMessageDataForChild(cc, aData, data)) {
+  if (!BuildClonedMessageDataForChild(cc->GetContentBridge(), aData, data)) {
     return false;
   }
   InfallibleTArray<CpowEntry> cpows;

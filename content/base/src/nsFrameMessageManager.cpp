@@ -8,6 +8,8 @@
 #include "nsFrameMessageManager.h"
 
 #include "AppProcessChecker.h"
+#include "ContentBridgeChild.h"
+#include "ContentBridgeParent.h"
 #include "ContentChild.h"
 #include "ContentParent.h"
 #include "nsContentUtils.h"
@@ -190,7 +192,7 @@ BuildClonedMessageData(typename BlobTraits<Flavor>::ConcreteContentManagerType* 
 }
 
 bool
-MessageManagerCallback::BuildClonedMessageDataForParent(ContentParent* aParent,
+MessageManagerCallback::BuildClonedMessageDataForParent(ContentBridgeParent* aParent,
                                                         const StructuredCloneData& aData,
                                                         ClonedMessageData& aClonedData)
 {
@@ -198,7 +200,7 @@ MessageManagerCallback::BuildClonedMessageDataForParent(ContentParent* aParent,
 }
 
 bool
-MessageManagerCallback::BuildClonedMessageDataForChild(ContentChild* aChild,
+MessageManagerCallback::BuildClonedMessageDataForChild(ContentBridgeChild* aChild,
                                                        const StructuredCloneData& aData,
                                                        ClonedMessageData& aClonedData)
 {
@@ -1735,7 +1737,7 @@ public:
       return true;
     }
     ClonedMessageData data;
-    if (!BuildClonedMessageDataForChild(cc, aData, data)) {
+    if (!BuildClonedMessageDataForChild(cc->GetContentBridge(), aData, data)) {
       return false;
     }
     InfallibleTArray<mozilla::jsipc::CpowEntry> cpows;
@@ -1762,7 +1764,7 @@ public:
       return true;
     }
     ClonedMessageData data;
-    if (!BuildClonedMessageDataForChild(cc, aData, data)) {
+    if (!BuildClonedMessageDataForChild(cc->GetContentBridge(), aData, data)) {
       return false;
     }
     InfallibleTArray<mozilla::jsipc::CpowEntry> cpows;

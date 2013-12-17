@@ -2228,124 +2228,19 @@ ContentParent::DeallocPDeviceStorageRequestParent(PDeviceStorageRequestParent* d
 PBlobParent*
 ContentParent::AllocPBlobParent(const BlobConstructorParams& aParams)
 {
-  return BlobParent::Create(this, aParams);
+  return GetContentBridge()->AllocPBlobParent(aParams);
 }
 
 bool
 ContentParent::DeallocPBlobParent(PBlobParent* aActor)
 {
-  delete aActor;
-  return true;
+  return GetContentBridge()->DeallocPBlobParent(aActor);
 }
 
 BlobParent*
 ContentParent::GetOrCreateActorForBlob(nsIDOMBlob* aBlob)
 {
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aBlob);
-
-  // If the blob represents a remote blob for this ContentParent then we can
-  // simply pass its actor back here.
-  if (nsCOMPtr<nsIRemoteBlob> remoteBlob = do_QueryInterface(aBlob)) {
-    if (BlobParent* actor = static_cast<BlobParent*>(
-          static_cast<PBlobParent*>(remoteBlob->GetPBlob()))) {
-      if (static_cast<ContentParent*>(actor->Manager()) == this) {
-        return actor;
-      }
-    }
-  }
-
-  // XXX This is only safe so long as all blob implementations in our tree
-  //     inherit nsDOMFileBase. If that ever changes then this will need to grow
-  //     a real interface or something.
-  const nsDOMFileBase* blob = static_cast<nsDOMFileBase*>(aBlob);
-
-  // We often pass blobs that are multipart but that only contain one sub-blob
-  // (WebActivities does this a bunch). Unwrap to reduce the number of actors
-  // that we have to maintain.
-  const nsTArray<nsCOMPtr<nsIDOMBlob> >* subBlobs = blob->GetSubBlobs();
-  if (subBlobs && subBlobs->Length() == 1) {
-    const nsCOMPtr<nsIDOMBlob>& subBlob = subBlobs->ElementAt(0);
-    MOZ_ASSERT(subBlob);
-
-    // We can only take this shortcut if the multipart and the sub-blob are both
-    // Blob objects or both File objects.
-    nsCOMPtr<nsIDOMFile> multipartBlobAsFile = do_QueryInterface(aBlob);
-    nsCOMPtr<nsIDOMFile> subBlobAsFile = do_QueryInterface(subBlob);
-    if (!multipartBlobAsFile == !subBlobAsFile) {
-      // The wrapping might have been unnecessary, see if we can simply pass an
-      // existing remote blob for this ContentParent.
-      if (nsCOMPtr<nsIRemoteBlob> remoteSubBlob = do_QueryInterface(subBlob)) {
-        BlobParent* actor =
-          static_cast<BlobParent*>(
-            static_cast<PBlobParent*>(remoteSubBlob->GetPBlob()));
-        MOZ_ASSERT(actor);
-
-        if (static_cast<ContentParent*>(actor->Manager()) == this) {
-          return actor;
-        }
-      }
-
-      // No need to add a reference here since the original blob must have a
-      // strong reference in the caller and it must also have a strong reference
-      // to this sub-blob.
-      aBlob = subBlob;
-      blob = static_cast<nsDOMFileBase*>(aBlob);
-      subBlobs = blob->GetSubBlobs();
-    }
-  }
-
-  // All blobs shared between processes must be immutable.
-  nsCOMPtr<nsIMutable> mutableBlob = do_QueryInterface(aBlob);
-  if (!mutableBlob || NS_FAILED(mutableBlob->SetMutable(false))) {
-    NS_WARNING("Failed to make blob immutable!");
-    return nullptr;
-  }
-
-  ChildBlobConstructorParams params;
-
-  if (blob->IsSizeUnknown() || blob->IsDateUnknown()) {
-    // We don't want to call GetSize or GetLastModifiedDate
-    // yet since that may stat a file on the main thread
-    // here. Instead we'll learn the size lazily from the
-    // other process.
-    params = MysteryBlobConstructorParams();
-  }
-  else {
-    nsString contentType;
-    nsresult rv = aBlob->GetType(contentType);
-    NS_ENSURE_SUCCESS(rv, nullptr);
-
-    uint64_t length;
-    rv = aBlob->GetSize(&length);
-    NS_ENSURE_SUCCESS(rv, nullptr);
-
-    nsCOMPtr<nsIDOMFile> file = do_QueryInterface(aBlob);
-    if (file) {
-      FileBlobConstructorParams fileParams;
-
-      rv = file->GetMozLastModifiedDate(&fileParams.modDate());
-      NS_ENSURE_SUCCESS(rv, nullptr);
-
-      rv = file->GetName(fileParams.name());
-      NS_ENSURE_SUCCESS(rv, nullptr);
-
-      fileParams.contentType() = contentType;
-      fileParams.length() = length;
-
-      params = fileParams;
-    } else {
-      NormalBlobConstructorParams blobParams;
-      blobParams.contentType() = contentType;
-      blobParams.length() = length;
-      params = blobParams;
-    }
-  }
-
-  BlobParent* actor = BlobParent::Create(this, aBlob);
-  NS_ENSURE_TRUE(actor, nullptr);
-
-  return SendPBlobConstructor(actor, params) ? actor : nullptr;
+  return GetContentBridge()->GetOrCreateActorForBlob(aBlob);
 }
 
 void
@@ -3140,7 +3035,7 @@ ContentParent::DoSendAsyncMessage(JSContext* aCx,
                                   nsIPrincipal* aPrincipal)
 {
   ClonedMessageData data;
-  if (!BuildClonedMessageDataForParent(this, aData, data)) {
+  if (!BuildClonedMessageDataForParent(GetContentBridge(), aData, data)) {
     return false;
   }
   InfallibleTArray<CpowEntry> cpows;

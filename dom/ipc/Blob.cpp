@@ -26,8 +26,8 @@
 #include "nsThreadUtils.h"
 #include "jsapi.h"
 
-#include "ContentChild.h"
-#include "ContentParent.h"
+#include "ContentBridgeChild.h"
+#include "ContentBridgeParent.h"
 #include "nsNetCID.h"
 
 #define PRIVATE_REMOTE_INPUT_STREAM_IID \

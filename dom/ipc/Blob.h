@@ -23,8 +23,8 @@ template<class T> class nsRevocableEventPtr;
 namespace mozilla {
 namespace dom {
 
-class ContentParent;
-class ContentChild;
+class ContentBridgeParent;
+class ContentBridgeChild;
 
 namespace ipc {
 
@@ -45,7 +45,7 @@ struct BlobTraits<Parent>
   typedef mozilla::dom::ParentBlobConstructorParams ConstructorParamsType;
   typedef mozilla::dom::ChildBlobConstructorParams
           OtherSideConstructorParamsType;
-  typedef mozilla::dom::ContentParent ConcreteContentManagerType;
+  typedef mozilla::dom::ContentBridgeParent ConcreteContentManagerType;
 
   // BaseType on the parent side is a bit more complicated than for the child
   // side. In the case of nsIInputStreams backed by files we need to ensure that
@@ -108,7 +108,7 @@ struct BlobTraits<Child>
   typedef mozilla::dom::ChildBlobConstructorParams ConstructorParamsType;
   typedef mozilla::dom::ParentBlobConstructorParams
           OtherSideConstructorParamsType;
-  typedef mozilla::dom::ContentChild ConcreteContentManagerType;
+  typedef mozilla::dom::ContentBridgeChild ConcreteContentManagerType;
 
 
   class BaseType : public ProtocolType
