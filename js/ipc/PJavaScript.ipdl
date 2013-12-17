@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-include protocol PContent;
+include protocol PContentBridge;
 include DOMTypes;
 include JavaScriptTypes;
 
@@ -16,7 +16,7 @@ namespace jsipc {
 
 intr protocol PJavaScript
 {
-    manager PContent;
+    manager PContentBridge;
 
 child:
     // The parent process no longer holds any references to the child object.

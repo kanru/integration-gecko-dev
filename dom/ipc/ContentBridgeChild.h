@@ -10,13 +10,30 @@
 #include "mozilla/dom/PContentBridgeChild.h"
 
 namespace mozilla {
+
+namespace jsipc {
+class JavaScriptChild;
+} // namespace jsipc
+
 namespace dom {
+
+class ContentChild;
 
 class ContentBridgeChild : public PContentBridgeChild
 {
+  friend ContentChild;
+
 public:
   ContentBridgeChild() {}
   virtual ~ContentBridgeChild() {}
+
+  jsipc::JavaScriptChild *GetCPOWManager();
+
+// IPDL methods
+public:
+  virtual jsipc::PJavaScriptChild* AllocPJavaScriptChild();
+  virtual bool DeallocPJavaScriptChild(jsipc::PJavaScriptChild*);
+// end IPDL methods
 };
 
 } // namesapce dom

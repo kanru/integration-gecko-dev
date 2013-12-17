@@ -1319,11 +1319,7 @@ ContentParent::NotifyTabDestroyed(PBrowserParent* aTab,
 jsipc::JavaScriptParent*
 ContentParent::GetCPOWManager()
 {
-    if (ManagedPJavaScriptParent().Length()) {
-        return static_cast<JavaScriptParent*>(ManagedPJavaScriptParent()[0]);
-    }
-    JavaScriptParent* actor = static_cast<JavaScriptParent*>(SendPJavaScriptConstructor());
-    return actor;
+    return GetContentBridge()->GetCPOWManager();
 }
 
 TestShellParent*
@@ -2140,19 +2136,19 @@ ContentParent::RecvGetXPCOMProcessAttributes(bool* aIsOffline)
 mozilla::jsipc::PJavaScriptParent *
 ContentParent::AllocPJavaScriptParent()
 {
-    mozilla::jsipc::JavaScriptParent *parent = new mozilla::jsipc::JavaScriptParent();
-    if (!parent->init()) {
-        delete parent;
-        return nullptr;
-    }
-    return parent;
+    return GetContentBridge()->AllocPJavaScriptParent();
+}
+
+bool
+ContentParent::RecvPJavaScriptConstructor(PJavaScriptParent* aActor)
+{
+    return GetContentBridge()->RecvPJavaScriptConstructor(aActor);
 }
 
 bool
 ContentParent::DeallocPJavaScriptParent(PJavaScriptParent *parent)
 {
-    static_cast<mozilla::jsipc::JavaScriptParent *>(parent)->decref();
-    return true;
+    return GetContentBridge()->DeallocPJavaScriptParent(parent);
 }
 
 PBrowserParent*

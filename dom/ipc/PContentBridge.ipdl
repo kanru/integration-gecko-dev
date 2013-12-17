@@ -5,13 +5,20 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 include protocol PContent;
+include protocol PJavaScript;
 
 namespace mozilla {
 namespace dom {
 
-async protocol PContentBridge
+sync protocol PContentBridge
 {
     manager PContent;
+
+    manages PJavaScript;
+
+both:
+    async PJavaScript();
+
 child:
     __delete__();
 };

@@ -41,6 +41,8 @@ EXPORTS.mozilla += [
 UNIFIED_SOURCES += [
     'AppProcessChecker.cpp',
     'ColorPickerParent.cpp',
+    'ContentBridgeChild.cpp',
+    'ContentBridgeParent.cpp',
     'ContentChild.cpp',
     'ContentParent.cpp',
     'ContentProcess.cpp',

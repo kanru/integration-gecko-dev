@@ -701,26 +701,13 @@ static void FirstIdle(void)
 mozilla::jsipc::PJavaScriptChild *
 ContentChild::AllocPJavaScriptChild()
 {
-    nsCOMPtr<nsIJSRuntimeService> svc = do_GetService("@mozilla.org/js/xpc/RuntimeService;1");
-    NS_ENSURE_TRUE(svc, nullptr);
-
-    JSRuntime *rt;
-    svc->GetRuntime(&rt);
-    NS_ENSURE_TRUE(svc, nullptr);
-
-    mozilla::jsipc::JavaScriptChild *child = new mozilla::jsipc::JavaScriptChild(rt);
-    if (!child->init()) {
-        delete child;
-        return nullptr;
-    }
-    return child;
+    return GetContentBridge()->AllocPJavaScriptChild();
 }
 
 bool
 ContentChild::DeallocPJavaScriptChild(PJavaScriptChild *child)
 {
-    delete child;
-    return true;
+    return GetContentBridge()->DeallocPJavaScriptChild(child);
 }
 
 PBrowserChild*
@@ -988,11 +975,7 @@ ContentChild::DeallocPTestShellChild(PTestShellChild* shell)
 jsipc::JavaScriptChild *
 ContentChild::GetCPOWManager()
 {
-    if (ManagedPJavaScriptChild().Length()) {
-        return static_cast<JavaScriptChild*>(ManagedPJavaScriptChild()[0]);
-    }
-    JavaScriptChild* actor = static_cast<JavaScriptChild*>(SendPJavaScriptConstructor());
-    return actor;
+    return GetContentBridge()->GetCPOWManager();
 }
 
 bool

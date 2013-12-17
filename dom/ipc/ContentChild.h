@@ -27,6 +27,7 @@ class URIParams;
 
 namespace jsipc {
 class JavaScriptChild;
+class PJavaScriptChild;
 }
 
 namespace layers {
@@ -187,8 +188,8 @@ public:
                                     const InfallibleTArray<OverrideMapping>& overrides,
                                     const nsCString& locale) MOZ_OVERRIDE;
 
-    virtual mozilla::jsipc::PJavaScriptChild* AllocPJavaScriptChild() MOZ_OVERRIDE;
-    virtual bool DeallocPJavaScriptChild(mozilla::jsipc::PJavaScriptChild*) MOZ_OVERRIDE;
+    virtual mozilla::jsipc::PJavaScriptChild* AllocPJavaScriptChild();
+    virtual bool DeallocPJavaScriptChild(mozilla::jsipc::PJavaScriptChild*);
 
     virtual bool RecvSetOffline(const bool& offline) MOZ_OVERRIDE;
 

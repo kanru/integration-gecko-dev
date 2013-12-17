@@ -10,13 +10,37 @@
 #include "mozilla/dom/PContentBridgeParent.h"
 
 namespace mozilla {
+
+namespace jsipc {
+class JavaScriptParent;
+class PJavaScriptParent;
+} // namespace jsipc
+
 namespace dom {
+
+class ContentParent;
 
 class ContentBridgeParent : public PContentBridgeParent
 {
+  friend ContentParent;
+
 public:
   ContentBridgeParent() {}
   virtual ~ContentBridgeParent() {}
+
+  jsipc::JavaScriptParent *GetCPOWManager();
+
+// IPDL methods
+public:
+  virtual PJavaScriptParent*
+  AllocPJavaScriptParent() MOZ_OVERRIDE;
+  virtual bool
+  RecvPJavaScriptConstructor(PJavaScriptParent* aActor) MOZ_OVERRIDE {
+    return PContentBridgeParent::RecvPJavaScriptConstructor(aActor);
+  }
+private:
+  virtual bool DeallocPJavaScriptParent(mozilla::jsipc::PJavaScriptParent*);
+// end IPDL methods
 };
 
 } // namespace dom

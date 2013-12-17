@@ -213,12 +213,8 @@ public:
         return PContentParent::RecvPStorageConstructor(aActor);
     }
 
-    virtual PJavaScriptParent*
-    AllocPJavaScriptParent() MOZ_OVERRIDE;
-    virtual bool
-    RecvPJavaScriptConstructor(PJavaScriptParent* aActor) MOZ_OVERRIDE {
-        return PContentParent::RecvPJavaScriptConstructor(aActor);
-    }
+    virtual jsipc::PJavaScriptParent* AllocPJavaScriptParent();
+    virtual bool RecvPJavaScriptConstructor(jsipc::PJavaScriptParent* aActor);
 
     virtual bool RecvRecordingDeviceEvents(const nsString& aRecordingStatus,
                                            const nsString& aPageURL,
@@ -339,11 +335,11 @@ private:
                                           bool* aIsForBrowser) MOZ_OVERRIDE;
     virtual bool RecvGetXPCOMProcessAttributes(bool* aIsOffline) MOZ_OVERRIDE;
 
-    virtual bool DeallocPJavaScriptParent(mozilla::jsipc::PJavaScriptParent*) MOZ_OVERRIDE;
+    virtual bool DeallocPJavaScriptParent(mozilla::jsipc::PJavaScriptParent*);
 
     virtual PBrowserParent* AllocPBrowserParent(const IPCTabContext& aContext,
-                                                const uint32_t& aChromeFlags) MOZ_OVERRIDE;
-    virtual bool DeallocPBrowserParent(PBrowserParent* frame) MOZ_OVERRIDE;
+                                                const uint32_t& aChromeFlags);
+    virtual bool DeallocPBrowserParent(PBrowserParent* frame);
 
     virtual PDeviceStorageRequestParent*
     AllocPDeviceStorageRequestParent(const DeviceStorageParams&) MOZ_OVERRIDE;
