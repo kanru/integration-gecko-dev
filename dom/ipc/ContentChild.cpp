@@ -12,8 +12,8 @@
 #include "nsQAppInstance.h"
 #endif
 
-#include "ContentChild.h"
 #include "ContentBridgeChild.h"
+#include "ContentChild.h"
 #include "CrashReporterChild.h"
 #include "TabChild.h"
 
@@ -417,8 +417,6 @@ ContentChild::Init(MessageLoop* aIOLoop,
 
     SendGetProcessAttributes(&mID, &mIsForApp, &mIsForBrowser);
 
-    GetCPOWManager();
-
 #ifdef MOZ_NUWA_PROCESS
     if (IsNuwaProcess()) {
         SetProcessName(NS_LITERAL_STRING("(Nuwa)"));
@@ -714,22 +712,7 @@ PBrowserChild*
 ContentChild::AllocPBrowserChild(const IPCTabContext& aContext,
                                  const uint32_t& aChromeFlags)
 {
-    // We'll happily accept any kind of IPCTabContext here; we don't need to
-    // check that it's of a certain type for security purposes, because we
-    // believe whatever the parent process tells us.
-
-    MaybeInvalidTabContext tc(aContext);
-    if (!tc.IsValid()) {
-        NS_ERROR(nsPrintfCString("Received an invalid TabContext from "
-                                 "the parent process. (%s)  Crashing...",
-                                 tc.GetInvalidReason()).get());
-        MOZ_CRASH("Invalid TabContext received from the parent process.");
-    }
-
-    nsRefPtr<TabChild> child = TabChild::Create(this, tc.GetTabContext(), aChromeFlags);
-
-    // The ref here is released in DeallocPBrowserChild.
-    return child.forget().get();
+    return GetContentBridge()->AllocPBrowserChild(aContext, aChromeFlags);
 }
 
 bool
@@ -737,16 +720,12 @@ ContentChild::RecvPBrowserConstructor(PBrowserChild* actor,
                                       const IPCTabContext& context,
                                       const uint32_t& chromeFlags)
 {
-    // This runs after AllocPBrowserChild() returns and the IPC machinery for this
-    // PBrowserChild has been set up.
+    return GetContentBridge()->RecvPBrowserConstructor(actor, context, chromeFlags);
+}
 
-    nsCOMPtr<nsIObserverService> os = services::GetObserverService();
-    if (os) {
-        nsITabChild* tc =
-            static_cast<nsITabChild*>(static_cast<TabChild*>(actor));
-        os->NotifyObservers(tc, "tab-child-created", nullptr);
-    }
-
+void
+ContentChild::TabChildCreated()
+{
     static bool hasRunOnce = false;
     if (!hasRunOnce) {
         hasRunOnce = true;
@@ -755,17 +734,12 @@ ContentChild::RecvPBrowserConstructor(PBrowserChild* actor,
         sFirstIdleTask = NewRunnableFunction(FirstIdle);
         MessageLoop::current()->PostIdleTask(FROM_HERE, sFirstIdleTask);
     }
-
-    return true;
 }
-
 
 bool
 ContentChild::DeallocPBrowserChild(PBrowserChild* iframe)
 {
-    TabChild* child = static_cast<TabChild*>(iframe);
-    NS_RELEASE(child);
-    return true;
+    return GetContentBridge()->DeallocPBrowserChild(iframe);
 }
 
 PBlobChild*
@@ -1605,13 +1579,17 @@ ContentChild::RecvNuwaFork()
 PContentBridgeChild*
 ContentChild::AllocPContentBridgeChild()
 {
-  return new ContentBridgeChild();
+  ContentBridgeChild* cb = new ContentBridgeChild();
+  // We release this ref in DeallocPContentBridgeChild()
+  cb->AddRef();
+  return cb;
 }
 
 bool
 ContentChild::DeallocPContentBridgeChild(PContentBridgeChild* aActor)
 {
-  delete aActor;
+  ContentBridgeChild* cb = static_cast<ContentBridgeChild*>(aActor);
+  cb->Release();
   return true;
 }
 
@@ -1621,8 +1599,7 @@ ContentChild::GetContentBridge()
     if (ManagedPContentBridgeChild().Length()) {
         return static_cast<ContentBridgeChild*>(ManagedPContentBridgeChild()[0]);
     }
-    ContentBridgeChild* actor = static_cast<ContentBridgeChild*>(SendPContentBridgeConstructor());
-    return actor;
+    return nullptr;
 }
 
 } // namespace dom

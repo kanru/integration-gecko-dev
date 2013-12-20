@@ -1733,7 +1733,7 @@ public:
   {
     mozilla::dom::ContentChild* cc =
       mozilla::dom::ContentChild::GetSingleton();
-    if (!cc) {
+    if (!cc || !cc->GetContentBridge()) {
       return true;
     }
     ClonedMessageData data;
@@ -1760,7 +1760,7 @@ public:
   {
     mozilla::dom::ContentChild* cc =
       mozilla::dom::ContentChild::GetSingleton();
-    if (!cc) {
+    if (!cc || !cc->GetContentBridge()) {
       return true;
     }
     ClonedMessageData data;

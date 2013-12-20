@@ -58,6 +58,7 @@ class ClonedMessageData;
 class MemoryReport;
 class TabContext;
 class ContentBridgeParent;
+class IPCTabContext;
 
 class ContentParent : public PContentParent
                     , public nsIObserver
@@ -250,7 +251,6 @@ private:
 
     // Hide the raw constructor methods since we don't want client code
     // using them.
-    using PContentParent::SendPBrowserConstructor;
     using PContentParent::SendPTestShellConstructor;
 
     // No more than one of !!aApp, aIsForBrowser, and aIsForPreallocated may be

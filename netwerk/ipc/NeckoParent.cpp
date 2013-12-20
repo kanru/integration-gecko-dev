@@ -19,6 +19,7 @@
 #include "mozilla/net/DNSRequestParent.h"
 #include "mozilla/net/RemoteOpenFileParent.h"
 #include "mozilla/dom/ContentParent.h"
+#include "mozilla/dom/ContentBridgeParent.h"
 #include "mozilla/dom/TabParent.h"
 #include "mozilla/dom/network/TCPSocketParent.h"
 #include "mozilla/dom/network/TCPServerSocketParent.h"
@@ -35,6 +36,7 @@
 #include "SerializedLoadContext.h"
 
 using mozilla::dom::ContentParent;
+using mozilla::dom::ContentBridgeParent;
 using mozilla::dom::TabParent;
 using mozilla::net::PTCPSocketParent;
 using mozilla::dom::TCPSocketParent;
@@ -102,7 +104,8 @@ NeckoParent::GetValidatedAppInfo(const SerializedLoadContext& aSerialized,
     }
   }
 
-  const InfallibleTArray<PBrowserParent*>& browsers = aContent->ManagedPBrowserParent();
+  ContentParent* content = static_cast<ContentParent*>(aContent);
+  const InfallibleTArray<PBrowserParent*>& browsers = content->GetContentBridge()->ManagedPBrowserParent();
   for (uint32_t i = 0; i < browsers.Length(); i++) {
     nsRefPtr<TabParent> tabParent = static_cast<TabParent*>(browsers[i]);
     uint32_t appId = tabParent->OwnOrContainingAppId();
@@ -475,9 +478,10 @@ NeckoParent::AllocPRemoteOpenFileParent(const URIParams& aURI,
     bool haveValidBrowser = false;
     bool hasManage = false;
     nsCOMPtr<mozIApplication> mozApp;
-    for (uint32_t i = 0; i < Manager()->ManagedPBrowserParent().Length(); i++) {
+    ContentBridgeParent* cb = static_cast<ContentParent*>(Manager())->GetContentBridge();
+    for (uint32_t i = 0; i < cb->ManagedPBrowserParent().Length(); i++) {
       nsRefPtr<TabParent> tabParent =
-        static_cast<TabParent*>(Manager()->ManagedPBrowserParent()[i]);
+        static_cast<TabParent*>(cb->ManagedPBrowserParent()[i]);
       uint32_t appId = tabParent->OwnOrContainingAppId();
       nsresult rv = appsService->GetAppByLocalId(appId, getter_AddRefs(mozApp));
       if (NS_FAILED(rv) || !mozApp) {

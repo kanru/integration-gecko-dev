@@ -8,6 +8,7 @@
 include protocol PBlob;
 include protocol PColorPicker;
 include protocol PContent;
+include protocol PContentBridge;
 include protocol PContentDialog;
 include protocol PDocumentRenderer;
 include protocol PContentPermissionRequest;
@@ -56,7 +57,7 @@ namespace dom {
 
 intr protocol PBrowser
 {
-    manager PContent;
+    manager PContentBridge;
 
     manages PColorPicker;
     manages PContentDialog;

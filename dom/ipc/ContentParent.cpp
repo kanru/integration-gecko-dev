@@ -689,10 +689,11 @@ ContentParent::CreateBrowserOrApp(const TabContext& aContext,
                 chromeFlags |= nsIWebBrowserChrome::CHROME_PRIVATE_LIFETIME;
             }
 
-            nsRefPtr<TabParent> tp(new TabParent(cp, aContext, chromeFlags));
+            ContentBridgeParent* cb = cp->GetContentBridge();
+            nsRefPtr<TabParent> tp(new TabParent(cb, aContext, chromeFlags));
             tp->SetOwnerElement(aFrameElement);
 
-            PBrowserParent* browser = cp->SendPBrowserConstructor(
+            PBrowserParent* browser = cb->SendPBrowserConstructor(
                 tp.forget().get(), // DeallocPBrowserParent() releases this ref.
                 aContext.AsIPCTabContext(),
                 chromeFlags);
@@ -756,9 +757,10 @@ ContentParent::CreateBrowserOrApp(const TabContext& aContext,
 
     uint32_t chromeFlags = 0;
 
-    nsRefPtr<TabParent> tp = new TabParent(p, aContext, chromeFlags);
+    ContentBridgeParent* cb = p->GetContentBridge();
+    nsRefPtr<TabParent> tp = new TabParent(cb, aContext, chromeFlags);
     tp->SetOwnerElement(aFrameElement);
-    PBrowserParent* browser = p->SendPBrowserConstructor(
+    PBrowserParent* browser = cb->SendPBrowserConstructor(
         nsRefPtr<TabParent>(tp).forget().get(), // DeallocPBrowserParent() releases this ref.
         aContext.AsIPCTabContext(),
         chromeFlags);
@@ -1276,7 +1278,7 @@ ContentParent::NotifyTabDestroying(PBrowserParent* aTab)
     // concurrently.  When all the PBrowsers are destroying, kick off
     // another task to ensure the child process *really* shuts down,
     // even if the PBrowsers themselves never finish destroying.
-    int32_t numLiveTabs = ManagedPBrowserParent().Length();
+    int32_t numLiveTabs = GetContentBridge()->ManagedPBrowserParent().Length();
     ++mNumDestroyingTabs;
     if (mNumDestroyingTabs != numLiveTabs) {
         return;
@@ -1308,7 +1310,7 @@ ContentParent::NotifyTabDestroyed(PBrowserParent* aTab,
     // There can be more than one PBrowser for a given app process
     // because of popup windows.  When the last one closes, shut
     // us down.
-    if (ManagedPBrowserParent().Length() == 1) {
+    if (GetContentBridge()->ManagedPBrowserParent().Length() == 1) {
         MessageLoop::current()->PostTask(
             FROM_HERE,
             NewRunnableMethod(this, &ContentParent::ShutDownProcess,
@@ -1527,6 +1529,7 @@ ContentParent::InitInternal(ProcessPriority aInitialPriority,
                             bool aSetupOffMainThreadCompositing,
                             bool aSendRegisteredChrome)
 {
+    unused << GetContentBridge();
     // Set the subprocess's priority.  We do this early on because we're likely
     // /lowering/ the process's CPU and memory priority, which it has inherited
     // from this process.
@@ -2155,55 +2158,13 @@ PBrowserParent*
 ContentParent::AllocPBrowserParent(const IPCTabContext& aContext,
                                    const uint32_t &aChromeFlags)
 {
-    unused << aChromeFlags;
-
-    const IPCTabAppBrowserContext& appBrowser = aContext.appBrowserContext();
-
-    // We don't trust the IPCTabContext we receive from the child, so we'll bail
-    // if we receive an IPCTabContext that's not a PopupIPCTabContext.
-    // (PopupIPCTabContext lets the child process prove that it has access to
-    // the app it's trying to open.)
-    if (appBrowser.type() != IPCTabAppBrowserContext::TPopupIPCTabContext) {
-        NS_ERROR("Unexpected IPCTabContext type.  Aborting AllocPBrowserParent.");
-        return nullptr;
-    }
-
-    const PopupIPCTabContext& popupContext = appBrowser.get_PopupIPCTabContext();
-    TabParent* opener = static_cast<TabParent*>(popupContext.openerParent());
-    if (!opener) {
-        NS_ERROR("Got null opener from child; aborting AllocPBrowserParent.");
-        return nullptr;
-    }
-
-    // Popup windows of isBrowser frames must be isBrowser if the parent
-    // isBrowser.  Allocating a !isBrowser frame with same app ID would allow
-    // the content to access data it's not supposed to.
-    if (!popupContext.isBrowserElement() && opener->IsBrowserElement()) {
-        NS_ERROR("Child trying to escalate privileges!  Aborting AllocPBrowserParent.");
-        return nullptr;
-    }
-
-    MaybeInvalidTabContext tc(aContext);
-    if (!tc.IsValid()) {
-        NS_ERROR(nsPrintfCString("Child passed us an invalid TabContext.  (%s)  "
-                                 "Aborting AllocPBrowserParent.",
-                                 tc.GetInvalidReason()).get());
-        return nullptr;
-    }
-
-    TabParent* parent = new TabParent(this, tc.GetTabContext(), aChromeFlags);
-
-    // We release this ref in DeallocPBrowserParent()
-    NS_ADDREF(parent);
-    return parent;
+    return GetContentBridge()->AllocPBrowserParent(aContext, aChromeFlags);
 }
 
 bool
 ContentParent::DeallocPBrowserParent(PBrowserParent* frame)
 {
-    TabParent* parent = static_cast<TabParent*>(frame);
-    NS_RELEASE(parent);
-    return true;
+    return GetContentBridge()->DeallocPBrowserParent(frame);
 }
 
 PDeviceStorageRequestParent*
@@ -3241,13 +3202,17 @@ ContentParent::RecvBackUpXResources(const FileDescriptor& aXSocketFd)
 PContentBridgeParent*
 ContentParent::AllocPContentBridgeParent()
 {
-  return new ContentBridgeParent();
+  ContentBridgeParent* cb = new ContentBridgeParent();
+  // We release this ref in DeallocPContentBridgeParent()
+  cb->AddRef();
+  return cb;
 }
 
 bool
 ContentParent::DeallocPContentBridgeParent(PContentBridgeParent* aActor)
 {
-  delete aActor;
+  ContentBridgeParent* cb = static_cast<ContentBridgeParent*>(aActor);
+  cb->Release();
   return true;
 }
 

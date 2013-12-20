@@ -39,6 +39,13 @@ public:
   virtual PBlobChild* AllocPBlobChild(const BlobConstructorParams& aParams);
   virtual bool DeallocPBlobChild(PBlobChild*);
 
+  virtual PBrowserChild* AllocPBrowserChild(const IPCTabContext &aContext,
+                                            const uint32_t &chromeFlags);
+  virtual bool DeallocPBrowserChild(PBrowserChild*);
+  virtual bool RecvPBrowserConstructor(PBrowserChild* actor,
+                                       const IPCTabContext& context,
+                                       const uint32_t& chromeFlags);
+
   virtual jsipc::PJavaScriptChild* AllocPJavaScriptChild();
   virtual bool DeallocPJavaScriptChild(jsipc::PJavaScriptChild*);
 // end IPDL methods

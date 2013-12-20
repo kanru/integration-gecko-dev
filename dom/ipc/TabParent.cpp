@@ -16,6 +16,7 @@
 #include "mozilla/docshell/OfflineCacheUpdateParent.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/PContentPermissionRequestParent.h"
+#include "mozilla/dom/ContentBridgeParent.h"
 #include "mozilla/Hal.h"
 #include "mozilla/ipc/DocumentRendererParent.h"
 #include "mozilla/layers/CompositorParent.h"
@@ -201,7 +202,7 @@ TabParent *TabParent::mIMETabParent = nullptr;
 
 NS_IMPL_ISUPPORTS3(TabParent, nsITabParent, nsIAuthPromptProvider, nsISecureBrowserUI)
 
-TabParent::TabParent(ContentParent* aManager, const TabContext& aContext, uint32_t aChromeFlags)
+TabParent::TabParent(ContentBridgeParent* aManager, const TabContext& aContext, uint32_t aChromeFlags)
   : TabContext(aContext)
   , mFrameElement(nullptr)
   , mIMESelectionAnchor(0)
@@ -294,14 +295,14 @@ TabParent::Destroy()
   }
   mIsDestroyed = true;
 
-  Manager()->NotifyTabDestroying(this);
+  static_cast<ContentParent*>(Manager()->Manager())->NotifyTabDestroying(this);
   mMarkedDestroying = true;
 }
 
 bool
 TabParent::Recv__delete__()
 {
-  Manager()->NotifyTabDestroyed(this, mMarkedDestroying);
+  static_cast<ContentParent*>(Manager()->Manager())->NotifyTabDestroyed(this, mMarkedDestroying);
   return true;
 }
 
@@ -905,9 +906,10 @@ TabParent::RecvSyncMessage(const nsString& aMessage,
                            InfallibleTArray<nsString>* aJSONRetVal)
 {
   nsIPrincipal* principal = aPrincipal;
-  ContentParent* parent = static_cast<ContentParent*>(Manager());
+  ContentBridgeParent* parent = Manager();
+  ContentParent* cp = static_cast<ContentParent*>(parent->Manager());
   if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
-      principal && !AssertAppPrincipal(parent, principal)) {
+      principal && !AssertAppPrincipal(cp, principal)) {
     return false;
   }
 
@@ -924,9 +926,10 @@ TabParent::AnswerRpcMessage(const nsString& aMessage,
                             InfallibleTArray<nsString>* aJSONRetVal)
 {
   nsIPrincipal* principal = aPrincipal;
-  ContentParent* parent = static_cast<ContentParent*>(Manager());
+  ContentBridgeParent* parent = Manager();
+  ContentParent* cp = static_cast<ContentParent*>(parent->Manager());
   if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
-      principal && !AssertAppPrincipal(parent, principal)) {
+      principal && !AssertAppPrincipal(cp, principal)) {
     return false;
   }
 
@@ -942,9 +945,10 @@ TabParent::RecvAsyncMessage(const nsString& aMessage,
                             const IPC::Principal& aPrincipal)
 {
   nsIPrincipal* principal = aPrincipal;
-  ContentParent* parent = static_cast<ContentParent*>(Manager());
+  ContentBridgeParent* parent = Manager();
+  ContentParent* cp = static_cast<ContentParent*>(parent->Manager());
   if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
-      principal && !AssertAppPrincipal(parent, principal)) {
+      principal && !AssertAppPrincipal(cp, principal)) {
     return false;
   }
 
@@ -1597,7 +1601,8 @@ TabParent::RecvPIndexedDBConstructor(PIndexedDBParent* aActor,
     return true;
   }
 
-  ContentParent* contentParent = Manager();
+  ContentBridgeParent* parent = Manager();
+  ContentParent* contentParent = static_cast<ContentParent*>(parent->Manager());
   NS_ASSERTION(contentParent, "Null manager?!");
 
   nsRefPtr<IDBFactory> factory;

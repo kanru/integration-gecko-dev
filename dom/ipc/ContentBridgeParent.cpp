@@ -8,7 +8,9 @@
 
 #include "Blob.h"
 #include "JavaScriptParent.h"
+#include "TabParent.h"
 #include "mozilla/ipc/InputStreamUtils.h"
+#include "mozilla/unused.h"
 #include "nsDOMFile.h"
 #include "nsIRemoteBlob.h"
 
@@ -146,6 +148,61 @@ ContentBridgeParent::DeallocPBlobParent(PBlobParent* aActor)
 {
   delete aActor;
   return true;
+}
+
+PBrowserParent*
+ContentBridgeParent::AllocPBrowserParent(const IPCTabContext& aContext,
+                                         const uint32_t &aChromeFlags)
+{
+    unused << aChromeFlags;
+
+    const IPCTabAppBrowserContext& appBrowser = aContext.appBrowserContext();
+
+    // We don't trust the IPCTabContext we receive from the child, so we'll bail
+    // if we receive an IPCTabContext that's not a PopupIPCTabContext.
+    // (PopupIPCTabContext lets the child process prove that it has access to
+    // the app it's trying to open.)
+    if (appBrowser.type() != IPCTabAppBrowserContext::TPopupIPCTabContext) {
+        NS_ERROR("Unexpected IPCTabContext type.  Aborting AllocPBrowserParent.");
+        return nullptr;
+    }
+
+    const PopupIPCTabContext& popupContext = appBrowser.get_PopupIPCTabContext();
+    TabParent* opener = static_cast<TabParent*>(popupContext.openerParent());
+    if (!opener) {
+        NS_ERROR("Got null opener from child; aborting AllocPBrowserParent.");
+        return nullptr;
+    }
+
+    // Popup windows of isBrowser frames must be isBrowser if the parent
+    // isBrowser.  Allocating a !isBrowser frame with same app ID would allow
+    // the content to access data it's not supposed to.
+    if (!popupContext.isBrowserElement() && opener->IsBrowserElement()) {
+        NS_ERROR("Child trying to escalate privileges!  Aborting AllocPBrowserParent.");
+        return nullptr;
+    }
+
+    MaybeInvalidTabContext tc(aContext);
+    if (!tc.IsValid()) {
+        NS_ERROR(nsPrintfCString("Child passed us an invalid TabContext.  (%s)  "
+                                 "Aborting AllocPBrowserParent.",
+                                 tc.GetInvalidReason()).get());
+        return nullptr;
+    }
+
+    TabParent* parent = new TabParent(this, tc.GetTabContext(), aChromeFlags);
+
+    // We release this ref in DeallocPBrowserParent()
+    NS_ADDREF(parent);
+    return parent;
+}
+
+bool
+ContentBridgeParent::DeallocPBrowserParent(PBrowserParent* frame)
+{
+    TabParent* parent = static_cast<TabParent*>(frame);
+    NS_RELEASE(parent);
+    return true;
 }
 
 jsipc::PJavaScriptParent*

@@ -42,12 +42,15 @@ class ConsoleListener;
 class PStorageChild;
 class ClonedMessageData;
 class ContentBridgeChild;
+class IPCTabContext;
 
 class ContentChild : public PContentChild
 {
     typedef mozilla::dom::ClonedMessageData ClonedMessageData;
     typedef mozilla::ipc::OptionalURIParams OptionalURIParams;
     typedef mozilla::ipc::URIParams URIParams;
+
+    friend ContentBridgeChild;
 
 public:
     ContentChild();
@@ -276,7 +279,8 @@ public:
 protected:
     virtual bool RecvPBrowserConstructor(PBrowserChild* actor,
                                          const IPCTabContext& context,
-                                         const uint32_t& chromeFlags) MOZ_OVERRIDE;
+                                         const uint32_t& chromeFlags);
+    void TabChildCreated();
 
 private:
     virtual void ActorDestroy(ActorDestroyReason why) MOZ_OVERRIDE;

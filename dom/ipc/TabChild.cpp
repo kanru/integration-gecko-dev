@@ -10,6 +10,7 @@
 
 #include "Layers.h"
 #include "ContentChild.h"
+#include "ContentBridgeParent.h"
 #include "IndexedDBChild.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/ClearOnShutdown.h"
@@ -222,7 +223,7 @@ TabChild::PreloadSlowThings()
 {
     MOZ_ASSERT(!sPreallocatedTab);
 
-    nsRefPtr<TabChild> tab(new TabChild(ContentChild::GetSingleton(),
+    nsRefPtr<TabChild> tab(new TabChild(ContentChild::GetSingleton()->GetContentBridge(),
                                         TabContext(), /* chromeFlags */ 0));
     if (!NS_SUCCEEDED(tab->Init()) ||
         !tab->InitTabChildGlobal(DONT_LOAD_SCRIPTS)) {
@@ -252,7 +253,7 @@ TabChild::PreloadSlowThings()
 }
 
 /*static*/ already_AddRefed<TabChild>
-TabChild::Create(ContentChild* aManager, const TabContext &aContext, uint32_t aChromeFlags)
+TabChild::Create(ContentBridgeChild* aManager, const TabContext &aContext, uint32_t aChromeFlags)
 {
     if (sPreallocatedTab &&
         sPreallocatedTab->mChromeFlags == aChromeFlags &&
@@ -274,7 +275,7 @@ TabChild::Create(ContentChild* aManager, const TabContext &aContext, uint32_t aC
 }
 
 
-TabChild::TabChild(ContentChild* aManager, const TabContext& aContext, uint32_t aChromeFlags)
+TabChild::TabChild(ContentBridgeChild* aManager, const TabContext& aContext, uint32_t aChromeFlags)
   : TabContext(aContext)
   , mRemoteFrame(nullptr)
   , mManager(aManager)
@@ -1036,8 +1037,8 @@ TabChild::BrowserFrameProvideWindow(nsIDOMWindow* aOpener,
   *aReturn = nullptr;
 
   nsRefPtr<TabChild> newChild =
-      new TabChild(ContentChild::GetSingleton(),
-                   /* TabContext */ *this, /* chromeFlags */ 0);
+    new TabChild(ContentChild::GetSingleton()->GetContentBridge(),
+                 /* TabContext */ *this, /* chromeFlags */ 0);
   if (!NS_SUCCEEDED(newChild->Init())) {
       return NS_ERROR_ABORT;
   }
@@ -2235,7 +2236,7 @@ TabChild::RecvAsyncMessage(const nsString& aMessage,
     StructuredCloneData cloneData = UnpackClonedMessageDataForChild(aData);
     nsRefPtr<nsFrameMessageManager> mm =
       static_cast<nsFrameMessageManager*>(mTabChildGlobal->mMessageManager.get());
-    CpowIdHolder cpows(static_cast<ContentChild*>(Manager())->GetCPOWManager(), aCpows);
+    CpowIdHolder cpows(static_cast<ContentBridgeChild*>(Manager())->GetCPOWManager(), aCpows);
     mm->ReceiveMessage(static_cast<EventTarget*>(mTabChildGlobal),
                        aMessage, false, &cloneData, &cpows, aPrincipal, nullptr);
   }
@@ -2564,14 +2565,14 @@ TabChild::DoSendBlockingMessage(JSContext* aCx,
                                 InfallibleTArray<nsString>* aJSONRetVal,
                                 bool aIsSync)
 {
-  ContentChild* cc = Manager();
+  ContentBridgeChild* cb = Manager();
   ClonedMessageData data;
-  if (!BuildClonedMessageDataForChild(cc->GetContentBridge(), aData, data)) {
+  if (!BuildClonedMessageDataForChild(cb, aData, data)) {
     return false;
   }
   InfallibleTArray<CpowEntry> cpows;
   if (sCpowsEnabled) {
-    if (!cc->GetCPOWManager()->Wrap(aCx, aCpows, &cpows)) {
+    if (!cb->GetCPOWManager()->Wrap(aCx, aCpows, &cpows)) {
       return false;
     }
   }
@@ -2591,14 +2592,14 @@ TabChild::DoSendAsyncMessage(JSContext* aCx,
                              JS::Handle<JSObject *> aCpows,
                              nsIPrincipal* aPrincipal)
 {
-  ContentChild* cc = Manager();
+  ContentBridgeChild* cb = Manager();
   ClonedMessageData data;
-  if (!BuildClonedMessageDataForChild(cc->GetContentBridge(), aData, data)) {
+  if (!BuildClonedMessageDataForChild(cb, aData, data)) {
     return false;
   }
   InfallibleTArray<CpowEntry> cpows;
   if (sCpowsEnabled) {
-    if (!cc->GetCPOWManager()->Wrap(aCx, aCpows, &cpows)) {
+    if (!cb->GetCPOWManager()->Wrap(aCx, aCpows, &cpows)) {
       return false;
     }
   }

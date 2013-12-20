@@ -44,8 +44,16 @@ public:
     return PContentBridgeParent::RecvPJavaScriptConstructor(aActor);
   }
 private:
+  // Hide the raw constructor methods since we don't want client code
+  // using them.
+  using PContentBridgeParent::SendPBrowserConstructor;
+
   virtual PBlobParent* AllocPBlobParent(const BlobConstructorParams& aParams);
   virtual bool DeallocPBlobParent(PBlobParent*);
+
+  virtual PBrowserParent* AllocPBrowserParent(const IPCTabContext& aContext,
+                                              const uint32_t& aChromeFlags);
+  virtual bool DeallocPBrowserParent(PBrowserParent* frame);
 
   virtual bool DeallocPJavaScriptParent(mozilla::jsipc::PJavaScriptParent*);
 // end IPDL methods

@@ -74,6 +74,7 @@
 #include "Layers.h"
 
 #include "AppProcessChecker.h"
+#include "ContentBridgeParent.h"
 #include "ContentParent.h"
 #include "TabParent.h"
 #include "mozilla/GuardObjects.h"
@@ -2105,7 +2106,8 @@ nsFrameLoader::TryRemoteBrowser()
   nsCOMPtr<Element> ownerElement = mOwnerContent;
   mRemoteBrowser = ContentParent::CreateBrowserOrApp(context, ownerElement);
   if (mRemoteBrowser) {
-    mChildID = mRemoteBrowser->Manager()->ChildID();
+    ContentParent* content = static_cast<ContentParent*>(mRemoteBrowser->Manager()->Manager());
+    mChildID = content->ChildID();
     nsCOMPtr<nsIDocShellTreeItem> rootItem;
     parentAsItem->GetRootTreeItem(getter_AddRefs(rootItem));
     nsCOMPtr<nsIDOMWindow> rootWin = do_GetInterface(rootItem);
@@ -2116,7 +2118,7 @@ nsFrameLoader::TryRemoteBrowser()
     rootChromeWin->GetBrowserDOMWindow(getter_AddRefs(browserDOMWin));
     mRemoteBrowser->SetBrowserDOMWindow(browserDOMWin);
 
-    mContentParent = mRemoteBrowser->Manager();
+    mContentParent = content;
 
     if (mOwnerContent->AttrValueIs(kNameSpaceID_None,
                                    nsGkAtoms::mozpasspointerevents,
@@ -2320,12 +2322,12 @@ nsFrameLoader::DoSendAsyncMessage(JSContext* aCx,
   TabParent* tabParent = mRemoteBrowser;
   if (tabParent) {
     ClonedMessageData data;
-    ContentParent* cp = tabParent->Manager();
-    if (!BuildClonedMessageDataForParent(cp->GetContentBridge(), aData, data)) {
+    ContentBridgeParent* cb = tabParent->Manager();
+    if (!BuildClonedMessageDataForParent(cb, aData, data)) {
       return false;
     }
     InfallibleTArray<mozilla::jsipc::CpowEntry> cpows;
-    if (aCpows && !cp->GetCPOWManager()->Wrap(aCx, aCpows, &cpows)) {
+    if (aCpows && !cb->GetCPOWManager()->Wrap(aCx, aCpows, &cpows)) {
       return false;
     }
     return tabParent->SendAsyncMessage(nsString(aMessage), data, cpows,
@@ -2508,7 +2510,12 @@ nsFrameLoader::SetRemoteBrowser(nsITabParent* aTabParent)
   MOZ_ASSERT(!mCurrentRemoteFrame);
   mRemoteFrame = true;
   mRemoteBrowser = static_cast<TabParent*>(aTabParent);
-  mChildID = mRemoteBrowser ? mRemoteBrowser->Manager()->ChildID() : 0;
+  if (mRemoteBrowser) {
+    ContentParent* content = static_cast<ContentParent*>(mRemoteBrowser->Manager()->Manager());
+    mChildID = content->ChildID();
+  } else {
+    mChildID = 0;
+  }
   ShowRemoteFrame(nsIntSize(0, 0));
 }
 

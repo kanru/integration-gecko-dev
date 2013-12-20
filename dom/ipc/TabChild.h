@@ -176,7 +176,7 @@ public:
 
     /** Return a TabChild with the given attributes. */
     static already_AddRefed<TabChild>
-    Create(ContentChild* aManager, const TabContext& aContext, uint32_t aChromeFlags);
+    Create(ContentBridgeChild* aManager, const TabContext& aContext, uint32_t aChromeFlags);
 
     virtual ~TabChild();
 
@@ -368,7 +368,7 @@ public:
                                     const nsAString& aPath,
                                     nsICachedFileDescriptorListener* aCallback);
 
-    ContentChild* Manager() { return mManager; }
+    ContentBridgeChild* Manager() { return mManager; }
 
     bool GetUpdateHitRegion() { return mUpdateHitRegion; }
 
@@ -414,7 +414,7 @@ private:
      *
      * |aIsBrowserElement| indicates whether we're a browser (but not an app).
      */
-    TabChild(ContentChild* aManager, const TabContext& aContext, uint32_t aChromeFlags);
+    TabChild(ContentBridgeChild* aManager, const TabContext& aContext, uint32_t aChromeFlags);
 
     nsresult Init();
 
@@ -496,7 +496,7 @@ private:
     nsCOMPtr<nsIURI> mLastURI;
     FrameMetrics mLastRootMetrics;
     RenderFrameChild* mRemoteFrame;
-    nsRefPtr<ContentChild> mManager;
+    nsRefPtr<ContentBridgeChild> mManager;
     nsRefPtr<TabChildGlobal> mTabChildGlobal;
     uint32_t mChromeFlags;
     nsIntRect mOuterRect;

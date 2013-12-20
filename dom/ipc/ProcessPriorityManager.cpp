@@ -756,7 +756,7 @@ ParticularProcessPriorityManager::OnRemoteBrowserFrameShown(nsISupports* aSubjec
   fl->GetTabParent(getter_AddRefs(tp));
   NS_ENSURE_TRUE_VOID(tp);
 
-  if (static_cast<TabParent*>(tp.get())->Manager() != mContentParent) {
+  if (static_cast<TabParent*>(tp.get())->Manager()->Manager() != static_cast<PContentParent*>(mContentParent)) {
     return;
   }
 
@@ -769,7 +769,7 @@ ParticularProcessPriorityManager::OnTabParentDestroyed(nsISupports* aSubject)
   nsCOMPtr<nsITabParent> tp = do_QueryInterface(aSubject);
   NS_ENSURE_TRUE_VOID(tp);
 
-  if (static_cast<TabParent*>(tp.get())->Manager() != mContentParent) {
+  if (static_cast<TabParent*>(tp.get())->Manager()->Manager() != static_cast<PContentParent*>(mContentParent)) {
     return;
   }
 
@@ -788,7 +788,7 @@ ParticularProcessPriorityManager::OnFrameloaderVisibleChanged(nsISupports* aSubj
     return;
   }
 
-  if (static_cast<TabParent*>(tp.get())->Manager() != mContentParent) {
+  if (static_cast<TabParent*>(tp.get())->Manager()->Manager() != static_cast<PContentParent*>(mContentParent)) {
     return;
   }
 
@@ -865,7 +865,7 @@ bool
 ParticularProcessPriorityManager::HasAppType(const char* aAppType)
 {
   const InfallibleTArray<PBrowserParent*>& browsers =
-    mContentParent->ManagedPBrowserParent();
+    mContentParent->GetContentBridge()->ManagedPBrowserParent();
   for (uint32_t i = 0; i < browsers.Length(); i++) {
     nsAutoString appType;
     static_cast<TabParent*>(browsers[i])->GetAppType(appType);
@@ -881,7 +881,7 @@ bool
 ParticularProcessPriorityManager::IsExpectingSystemMessage()
 {
   const InfallibleTArray<PBrowserParent*>& browsers =
-    mContentParent->ManagedPBrowserParent();
+    mContentParent->GetContentBridge()->ManagedPBrowserParent();
   for (uint32_t i = 0; i < browsers.Length(); i++) {
     TabParent* tp = static_cast<TabParent*>(browsers[i]);
     nsCOMPtr<nsIMozBrowserFrame> bf = do_QueryInterface(tp->GetOwnerElement());
@@ -913,7 +913,7 @@ ParticularProcessPriorityManager::ComputePriority()
 
   bool isVisible = false;
   const InfallibleTArray<PBrowserParent*>& browsers =
-    mContentParent->ManagedPBrowserParent();
+    mContentParent->GetContentBridge()->ManagedPBrowserParent();
   for (uint32_t i = 0; i < browsers.Length(); i++) {
     if (static_cast<TabParent*>(browsers[i])->IsVisible()) {
       isVisible = true;

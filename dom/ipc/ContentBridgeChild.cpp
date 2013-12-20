@@ -4,14 +4,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "ContentChild.h"
 #include "ContentBridgeChild.h"
 
 #include "Blob.h"
 #include "JavaScriptChild.h"
+#include "TabChild.h"
 #include "mozilla/ipc/InputStreamUtils.h"
 #include "nsDOMFile.h"
 #include "nsIJSRuntimeService.h"
 #include "nsIRemoteBlob.h"
+#include "nsPrintfCString.h"
 #include "nsServiceManagerUtils.h"
 
 namespace mozilla {
@@ -154,6 +157,56 @@ ContentBridgeChild::DeallocPBlobChild(PBlobChild* aActor)
 {
   delete aActor;
   return true;
+}
+
+PBrowserChild*
+ContentBridgeChild::AllocPBrowserChild(const IPCTabContext& aContext,
+                                       const uint32_t& aChromeFlags)
+{
+    // We'll happily accept any kind of IPCTabContext here; we don't need to
+    // check that it's of a certain type for security purposes, because we
+    // believe whatever the parent process tells us.
+
+    MaybeInvalidTabContext tc(aContext);
+    if (!tc.IsValid()) {
+        NS_ERROR(nsPrintfCString("Received an invalid TabContext from "
+                                 "the parent process. (%s)  Crashing...",
+                                 tc.GetInvalidReason()).get());
+        MOZ_CRASH("Invalid TabContext received from the parent process.");
+    }
+
+    nsRefPtr<TabChild> child = TabChild::Create(this, tc.GetTabContext(), aChromeFlags);
+
+    // The ref here is released in DeallocPBrowserChild.
+    return child.forget().get();
+}
+
+bool
+ContentBridgeChild::RecvPBrowserConstructor(PBrowserChild* actor,
+                                            const IPCTabContext& context,
+                                            const uint32_t& chromeFlags)
+{
+    // This runs after AllocPBrowserChild() returns and the IPC machinery for this
+    // PBrowserChild has been set up.
+
+    nsCOMPtr<nsIObserverService> os = services::GetObserverService();
+    if (os) {
+        nsITabChild* tc =
+            static_cast<nsITabChild*>(static_cast<TabChild*>(actor));
+        os->NotifyObservers(tc, "tab-child-created", nullptr);
+    }
+
+    ContentChild::GetSingleton()->TabChildCreated();
+
+    return true;
+}
+
+bool
+ContentBridgeChild::DeallocPBrowserChild(PBrowserChild* iframe)
+{
+    TabChild* child = static_cast<TabChild*>(iframe);
+    NS_RELEASE(child);
+    return true;
 }
 
 jsipc::PJavaScriptChild*
