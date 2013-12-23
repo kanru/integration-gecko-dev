@@ -9,12 +9,15 @@ include protocol PBrowser;
 include protocol PContent;
 include protocol PJavaScript;
 include DOMTypes;
+include JavaScriptTypes;
 include PTabContext;
+
+using class IPC::Principal from "mozilla/dom/PermissionMessageUtils.h";
 
 namespace mozilla {
 namespace dom {
 
-sync protocol PContentBridge
+intr protocol PContentBridge
 {
     manager PContent;
 
@@ -50,6 +53,17 @@ both:
 
     async PBlob(BlobConstructorParams params);
     async PJavaScript();
+
+    AsyncMessage(nsString aMessage, ClonedMessageData aData,
+                 CpowEntry[] aCpows, Principal aPrincipal);
+parent:
+    sync SyncMessage(nsString aMessage, ClonedMessageData aData,
+                     CpowEntry[] aCpows, Principal aPrincipal)
+      returns (nsString[] retval);
+
+    rpc RpcMessage(nsString aMessage, ClonedMessageData aData,
+                   CpowEntry[] aCpows, Principal aPrincipal)
+      returns (nsString[] retval);
 
 child:
     __delete__();

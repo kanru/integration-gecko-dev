@@ -207,11 +207,6 @@ public:
     virtual bool RecvNotifyAlertsObserver(const nsCString& aType,
                                           const nsString& aData) MOZ_OVERRIDE;
 
-    virtual bool RecvAsyncMessage(const nsString& aMsg,
-                                  const ClonedMessageData& aData,
-                                  const InfallibleTArray<CpowEntry>& aCpows,
-                                  const IPC::Principal& aPrincipal) MOZ_OVERRIDE;
-
     virtual bool RecvGeolocationUpdate(const GeoPosition& somewhere) MOZ_OVERRIDE;
 
     virtual bool RecvAddPermission(const IPC::Permission& permission) MOZ_OVERRIDE;

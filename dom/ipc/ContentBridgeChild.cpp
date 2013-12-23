@@ -9,9 +9,12 @@
 
 #include "Blob.h"
 #include "JavaScriptChild.h"
+#include "PermissionMessageUtils.h"
+#include "StructuredCloneUtils.h"
 #include "TabChild.h"
 #include "mozilla/ipc/InputStreamUtils.h"
 #include "nsDOMFile.h"
+#include "nsFrameMessageManager.h"
 #include "nsIJSRuntimeService.h"
 #include "nsIRemoteBlob.h"
 #include "nsPrintfCString.h"
@@ -231,6 +234,22 @@ bool
 ContentBridgeChild::DeallocPJavaScriptChild(jsipc::PJavaScriptChild *child)
 {
   delete child;
+  return true;
+}
+
+bool
+ContentBridgeChild::RecvAsyncMessage(const nsString& aMsg,
+                                     const ClonedMessageData& aData,
+                                     const InfallibleTArray<CpowEntry>& aCpows,
+                                     const IPC::Principal& aPrincipal)
+{
+  nsRefPtr<nsFrameMessageManager> cpm = nsFrameMessageManager::sChildProcessManager;
+  if (cpm) {
+    StructuredCloneData cloneData = ipc::UnpackClonedMessageDataForChild(aData);
+    jsipc::CpowIdHolder cpows(GetCPOWManager(), aCpows);
+    cpm->ReceiveMessage(static_cast<nsIContentFrameMessageManager*>(cpm.get()),
+                        aMsg, false, &cloneData, &cpows, aPrincipal, nullptr);
+  }
   return true;
 }
 

@@ -373,14 +373,6 @@ parent:
 
     sync ReadFontList() returns (FontListEntry[] retValue);
 
-    sync SyncMessage(nsString aMessage, ClonedMessageData aData,
-                     CpowEntry[] aCpows, Principal aPrincipal)
-      returns (nsString[] retval);
-
-    rpc RpcMessage(nsString aMessage, ClonedMessageData aData,
-                   CpowEntry[] aCpows, Principal aPrincipal)
-      returns (nsString[] retval);
-
     ShowAlertNotification(nsString imageUrl,
                           nsString title,
                           nsString text,
@@ -506,10 +498,6 @@ parent:
      * use the newly-invalid surface.
      */
     BackUpXResources(FileDescriptor aXSocketFd);
-
-both:
-     AsyncMessage(nsString aMessage, ClonedMessageData aData,
-                  CpowEntry[] aCpows, Principal aPrincipal);
 };
 
 }

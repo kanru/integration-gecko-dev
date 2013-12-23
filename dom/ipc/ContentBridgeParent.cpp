@@ -7,8 +7,11 @@
 #include "ContentBridgeParent.h"
 
 #include "Blob.h"
+#include "ContentParent.h"
 #include "JavaScriptParent.h"
+#include "PermissionMessageUtils.h"
 #include "TabParent.h"
+#include "mozilla/Preferences.h"
 #include "mozilla/ipc/InputStreamUtils.h"
 #include "mozilla/unused.h"
 #include "nsDOMFile.h"
@@ -16,6 +19,11 @@
 
 namespace mozilla {
 namespace dom {
+
+ContentBridgeParent::ContentBridgeParent()
+{
+  mMessageManager = nsFrameMessageManager::NewProcessMessageManager(this);
+}
 
 BlobParent*
 ContentBridgeParent::GetOrCreateActorForBlob(nsIDOMBlob* aBlob)
@@ -137,6 +145,48 @@ ContentBridgeParent::GetCPOWManager()
   return actor;
 }
 
+bool
+ContentBridgeParent::DoSendAsyncMessage(JSContext* aCx,
+                                        const nsAString& aMessage,
+                                        const mozilla::dom::StructuredCloneData& aData,
+                                        JS::Handle<JSObject *> aCpows,
+                                        nsIPrincipal* aPrincipal)
+{
+  ClonedMessageData data;
+  if (!BuildClonedMessageDataForParent(this, aData, data)) {
+    return false;
+  }
+  InfallibleTArray<CpowEntry> cpows;
+  if (!GetCPOWManager()->Wrap(aCx, aCpows, &cpows)) {
+    return false;
+  }
+  return SendAsyncMessage(nsString(aMessage), data, cpows, aPrincipal);
+}
+
+bool
+ContentBridgeParent::CheckPermission(const nsAString& aPermission)
+{
+  return AssertAppProcessPermission(static_cast<ContentParent*>(Manager()), NS_ConvertUTF16toUTF8(aPermission).get());
+}
+
+bool
+ContentBridgeParent::CheckManifestURL(const nsAString& aManifestURL)
+{
+  return AssertAppProcessManifestURL(static_cast<ContentParent*>(Manager()), NS_ConvertUTF16toUTF8(aManifestURL).get());
+}
+
+bool
+ContentBridgeParent::CheckAppHasPermission(const nsAString& aPermission)
+{
+  return AssertAppHasPermission(static_cast<ContentParent*>(Manager()), NS_ConvertUTF16toUTF8(aPermission).get());
+}
+
+bool
+ContentBridgeParent::CheckAppHasStatus(unsigned short aStatus)
+{
+  return AssertAppHasStatus(static_cast<ContentParent*>(Manager()), aStatus);
+}
+
 PBlobParent*
 ContentBridgeParent::AllocPBlobParent(const BlobConstructorParams& aParams)
 {
@@ -222,6 +272,18 @@ ContentBridgeParent::AllocPJavaScriptParent()
 //   return PContentBridgeParent::RecvPJavaScriptConstructor(aActor);
 // }
 
+void
+ContentBridgeParent::ActorDestroy(ActorDestroyReason why)
+{
+    nsRefPtr<nsFrameMessageManager> ppm = mMessageManager;
+    if (ppm) {
+      ppm->ReceiveMessage(static_cast<nsIContentFrameMessageManager*>(ppm.get()),
+                          CHILD_PROCESS_SHUTDOWN_MESSAGE, false,
+                          nullptr, nullptr, nullptr, nullptr);
+      ppm->Disconnect();
+    }
+}
+
 bool
 ContentBridgeParent::DeallocPJavaScriptParent(PJavaScriptParent* parent)
 {
@@ -229,6 +291,74 @@ ContentBridgeParent::DeallocPJavaScriptParent(PJavaScriptParent* parent)
   return true;
 }
 
+bool
+ContentBridgeParent::RecvSyncMessage(const nsString& aMsg,
+                                     const ClonedMessageData& aData,
+                                     const InfallibleTArray<CpowEntry>& aCpows,
+                                     const IPC::Principal& aPrincipal,
+                                     InfallibleTArray<nsString>* aRetvals)
+{
+  nsIPrincipal* principal = aPrincipal;
+  if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
+      principal && !AssertAppPrincipal(static_cast<ContentParent*>(Manager()), principal)) {
+    return false;
+  }
+
+  nsRefPtr<nsFrameMessageManager> ppm = mMessageManager;
+  if (ppm) {
+    StructuredCloneData cloneData = ipc::UnpackClonedMessageDataForParent(aData);
+    jsipc::CpowIdHolder cpows(GetCPOWManager(), aCpows);
+
+    ppm->ReceiveMessage(static_cast<nsIContentFrameMessageManager*>(ppm.get()),
+                        aMsg, true, &cloneData, &cpows, aPrincipal, aRetvals);
+  }
+  return true;
+}
+
+bool
+ContentBridgeParent::AnswerRpcMessage(const nsString& aMsg,
+                                      const ClonedMessageData& aData,
+                                      const InfallibleTArray<CpowEntry>& aCpows,
+                                      const IPC::Principal& aPrincipal,
+                                      InfallibleTArray<nsString>* aRetvals)
+{
+  nsIPrincipal* principal = aPrincipal;
+  if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
+      principal && !AssertAppPrincipal(static_cast<ContentParent*>(Manager()), principal)) {
+    return false;
+  }
+
+  nsRefPtr<nsFrameMessageManager> ppm = mMessageManager;
+  if (ppm) {
+    StructuredCloneData cloneData = ipc::UnpackClonedMessageDataForParent(aData);
+    jsipc::CpowIdHolder cpows(GetCPOWManager(), aCpows);
+    ppm->ReceiveMessage(static_cast<nsIContentFrameMessageManager*>(ppm.get()),
+                        aMsg, true, &cloneData, &cpows, aPrincipal, aRetvals);
+  }
+  return true;
+}
+
+bool
+ContentBridgeParent::RecvAsyncMessage(const nsString& aMsg,
+                                      const ClonedMessageData& aData,
+                                      const InfallibleTArray<CpowEntry>& aCpows,
+                                      const IPC::Principal& aPrincipal)
+{
+  nsIPrincipal* principal = aPrincipal;
+  if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
+      principal && !AssertAppPrincipal(static_cast<ContentParent*>(Manager()), principal)) {
+    return false;
+  }
+
+  nsRefPtr<nsFrameMessageManager> ppm = mMessageManager;
+  if (ppm) {
+    StructuredCloneData cloneData = ipc::UnpackClonedMessageDataForParent(aData);
+    jsipc::CpowIdHolder cpows(GetCPOWManager(), aCpows);
+    ppm->ReceiveMessage(static_cast<nsIContentFrameMessageManager*>(ppm.get()),
+                        aMsg, false, &cloneData, &cpows, aPrincipal, nullptr);
+  }
+  return true;
+}
 
 } // dom
 } // mozilla

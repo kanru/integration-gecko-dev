@@ -1745,11 +1745,11 @@ public:
       return false;
     }
     if (aIsSync) {
-      return cc->SendSyncMessage(PromiseFlatString(aMessage), data, cpows,
-                                 aPrincipal, aJSONRetVal);
+      return cc->GetContentBridge()->SendSyncMessage(
+        PromiseFlatString(aMessage), data, cpows, aPrincipal, aJSONRetVal);
     }
-    return cc->CallRpcMessage(PromiseFlatString(aMessage), data, cpows,
-                              aPrincipal, aJSONRetVal);
+    return cc->GetContentBridge()->CallRpcMessage(
+      PromiseFlatString(aMessage), data, cpows, aPrincipal, aJSONRetVal);
   }
 
   virtual bool DoSendAsyncMessage(JSContext* aCx,
@@ -1771,8 +1771,8 @@ public:
     if (!cc->GetCPOWManager()->Wrap(aCx, aCpows, &cpows)) {
       return false;
     }
-    return cc->SendAsyncMessage(PromiseFlatString(aMessage), data, cpows,
-                                aPrincipal);
+    return cc->GetContentBridge()->SendAsyncMessage(
+      PromiseFlatString(aMessage), data, cpows, aPrincipal);
   }
 
 };
@@ -1913,7 +1913,7 @@ NS_NewParentProcessMessageManager(nsIMessageBroadcaster** aResult)
 
 
 nsFrameMessageManager*
-nsFrameMessageManager::NewProcessMessageManager(mozilla::dom::ContentParent* aProcess)
+nsFrameMessageManager::NewProcessMessageManager(mozilla::dom::ipc::MessageManagerCallback* aProcess)
 {
   if (!nsFrameMessageManager::sParentProcessManager) {
      nsCOMPtr<nsIMessageBroadcaster> dummy =

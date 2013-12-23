@@ -1031,15 +1031,6 @@ ContentParent::ShutDownProcess(bool aCloseWithError)
     // NB: must MarkAsDead() here so that this isn't accidentally
     // returned from Get*() while in the midst of shutdown.
     MarkAsDead();
-
-    // A ContentParent object might not get freed until after XPCOM shutdown has
-    // shut down the cycle collector.  But by then it's too late to release any
-    // CC'ed objects, so we need to null them out here, while we still can.  See
-    // bug 899761.
-    if (mMessageManager) {
-      mMessageManager->Disconnect();
-      mMessageManager = nullptr;
-    }
 }
 
 void
@@ -1169,12 +1160,6 @@ ContentParent::ActorDestroy(ActorDestroyReason why)
         mForceKillTask = nullptr;
     }
 
-    nsRefPtr<nsFrameMessageManager> ppm = mMessageManager;
-    if (ppm) {
-      ppm->ReceiveMessage(static_cast<nsIContentFrameMessageManager*>(ppm.get()),
-                          CHILD_PROCESS_SHUTDOWN_MESSAGE, false,
-                          nullptr, nullptr, nullptr, nullptr);
-    }
     nsCOMPtr<nsIThreadObserver>
         kungFuDeathGrip(static_cast<nsIThreadObserver*>(this));
     nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
@@ -1184,10 +1169,6 @@ ContentParent::ActorDestroy(ActorDestroyReason why)
             obs->RemoveObserver(static_cast<nsIObserver*>(this),
                                 sObserverTopics[i]);
         }
-    }
-
-    if (ppm) {
-      ppm->Disconnect();
     }
 
     // Tell the memory reporter manager that this ContentParent is going away.
@@ -1565,8 +1546,6 @@ ContentParent::InitInternal(ProcessPriority aInitialPriority,
             static_cast<nsChromeRegistryChrome*>(registrySvc.get());
         chromeRegistry->SendRegisteredChrome(this);
     }
-
-    mMessageManager = nsFrameMessageManager::NewProcessMessageManager(this);
 
     if (gAppData) {
         nsCString version(gAppData->version);
@@ -2757,75 +2736,6 @@ ContentParent::RecvCloseAlert(const nsString& aName,
 }
 
 bool
-ContentParent::RecvSyncMessage(const nsString& aMsg,
-                               const ClonedMessageData& aData,
-                               const InfallibleTArray<CpowEntry>& aCpows,
-                               const IPC::Principal& aPrincipal,
-                               InfallibleTArray<nsString>* aRetvals)
-{
-  nsIPrincipal* principal = aPrincipal;
-  if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
-      principal && !AssertAppPrincipal(this, principal)) {
-    return false;
-  }
-
-  nsRefPtr<nsFrameMessageManager> ppm = mMessageManager;
-  if (ppm) {
-    StructuredCloneData cloneData = ipc::UnpackClonedMessageDataForParent(aData);
-    CpowIdHolder cpows(GetCPOWManager(), aCpows);
-
-    ppm->ReceiveMessage(static_cast<nsIContentFrameMessageManager*>(ppm.get()),
-                        aMsg, true, &cloneData, &cpows, aPrincipal, aRetvals);
-  }
-  return true;
-}
-
-bool
-ContentParent::AnswerRpcMessage(const nsString& aMsg,
-                                const ClonedMessageData& aData,
-                                const InfallibleTArray<CpowEntry>& aCpows,
-                                const IPC::Principal& aPrincipal,
-                                InfallibleTArray<nsString>* aRetvals)
-{
-  nsIPrincipal* principal = aPrincipal;
-  if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
-      principal && !AssertAppPrincipal(this, principal)) {
-    return false;
-  }
-
-  nsRefPtr<nsFrameMessageManager> ppm = mMessageManager;
-  if (ppm) {
-    StructuredCloneData cloneData = ipc::UnpackClonedMessageDataForParent(aData);
-    CpowIdHolder cpows(GetCPOWManager(), aCpows);
-    ppm->ReceiveMessage(static_cast<nsIContentFrameMessageManager*>(ppm.get()),
-                        aMsg, true, &cloneData, &cpows, aPrincipal, aRetvals);
-  }
-  return true;
-}
-
-bool
-ContentParent::RecvAsyncMessage(const nsString& aMsg,
-                                const ClonedMessageData& aData,
-                                const InfallibleTArray<CpowEntry>& aCpows,
-                                const IPC::Principal& aPrincipal)
-{
-  nsIPrincipal* principal = aPrincipal;
-  if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
-      principal && !AssertAppPrincipal(this, principal)) {
-    return false;
-  }
-
-  nsRefPtr<nsFrameMessageManager> ppm = mMessageManager;
-  if (ppm) {
-    StructuredCloneData cloneData = ipc::UnpackClonedMessageDataForParent(aData);
-    CpowIdHolder cpows(GetCPOWManager(), aCpows);
-    ppm->ReceiveMessage(static_cast<nsIContentFrameMessageManager*>(ppm.get()),
-                        aMsg, false, &cloneData, &cpows, aPrincipal, nullptr);
-  }
-  return true;
-}
-
-bool
 ContentParent::RecvFilePathUpdateNotify(const nsString& aType,
                                         const nsString& aStorageName,
                                         const nsString& aFilePath,
@@ -2986,48 +2896,6 @@ ContentParent::RecvPrivateDocShellsExist(const bool& aExist)
     }
   }
   return true;
-}
-
-bool
-ContentParent::DoSendAsyncMessage(JSContext* aCx,
-                                  const nsAString& aMessage,
-                                  const mozilla::dom::StructuredCloneData& aData,
-                                  JS::Handle<JSObject *> aCpows,
-                                  nsIPrincipal* aPrincipal)
-{
-  ClonedMessageData data;
-  if (!BuildClonedMessageDataForParent(GetContentBridge(), aData, data)) {
-    return false;
-  }
-  InfallibleTArray<CpowEntry> cpows;
-  if (!GetCPOWManager()->Wrap(aCx, aCpows, &cpows)) {
-    return false;
-  }
-  return SendAsyncMessage(nsString(aMessage), data, cpows, aPrincipal);
-}
-
-bool
-ContentParent::CheckPermission(const nsAString& aPermission)
-{
-  return AssertAppProcessPermission(this, NS_ConvertUTF16toUTF8(aPermission).get());
-}
-
-bool
-ContentParent::CheckManifestURL(const nsAString& aManifestURL)
-{
-  return AssertAppProcessManifestURL(this, NS_ConvertUTF16toUTF8(aManifestURL).get());
-}
-
-bool
-ContentParent::CheckAppHasPermission(const nsAString& aPermission)
-{
-  return AssertAppHasPermission(this, NS_ConvertUTF16toUTF8(aPermission).get());
-}
-
-bool
-ContentParent::CheckAppHasStatus(unsigned short aStatus)
-{
-  return AssertAppHasStatus(this, aStatus);
 }
 
 bool

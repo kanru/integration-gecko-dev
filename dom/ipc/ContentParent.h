@@ -24,8 +24,6 @@
 #include "nsIDOMGeoPositionCallback.h"
 #include "PermissionMessageUtils.h"
 
-#define CHILD_PROCESS_SHUTDOWN_MESSAGE NS_LITERAL_STRING("child-process-shutdown")
-
 class mozIApplication;
 class nsConsoleService;
 class nsIDOMBlob;
@@ -64,7 +62,6 @@ class ContentParent : public PContentParent
                     , public nsIObserver
                     , public nsIThreadObserver
                     , public nsIDOMGeoPositionCallback
-                    , public mozilla::dom::ipc::MessageManagerCallback
                     , public mozilla::LinkedListElement<ContentParent>
 {
     typedef mozilla::ipc::GeckoChildProcessHost GeckoChildProcessHost;
@@ -118,19 +115,6 @@ public:
     NS_DECL_NSIOBSERVER
     NS_DECL_NSITHREADOBSERVER
     NS_DECL_NSIDOMGEOPOSITIONCALLBACK
-
-    /**
-     * MessageManagerCallback methods that we override.
-     */
-    virtual bool DoSendAsyncMessage(JSContext* aCx,
-                                    const nsAString& aMessage,
-                                    const mozilla::dom::StructuredCloneData& aData,
-                                    JS::Handle<JSObject *> aCpows,
-                                    nsIPrincipal* aPrincipal) MOZ_OVERRIDE;
-    virtual bool CheckPermission(const nsAString& aPermission) MOZ_OVERRIDE;
-    virtual bool CheckManifestURL(const nsAString& aManifestURL) MOZ_OVERRIDE;
-    virtual bool CheckAppHasPermission(const nsAString& aPermission) MOZ_OVERRIDE;
-    virtual bool CheckAppHasStatus(unsigned short aStatus) MOZ_OVERRIDE;
 
     /** Notify that a tab is beginning its destruction sequence. */
     void NotifyTabDestroying(PBrowserParent* aTab);
@@ -446,21 +430,6 @@ private:
 
     virtual bool RecvLoadURIExternal(const URIParams& uri) MOZ_OVERRIDE;
 
-    virtual bool RecvSyncMessage(const nsString& aMsg,
-                                 const ClonedMessageData& aData,
-                                 const InfallibleTArray<CpowEntry>& aCpows,
-                                 const IPC::Principal& aPrincipal,
-                                 InfallibleTArray<nsString>* aRetvals) MOZ_OVERRIDE;
-    virtual bool AnswerRpcMessage(const nsString& aMsg,
-                                  const ClonedMessageData& aData,
-                                  const InfallibleTArray<CpowEntry>& aCpows,
-                                  const IPC::Principal& aPrincipal,
-                                  InfallibleTArray<nsString>* aRetvals) MOZ_OVERRIDE;
-    virtual bool RecvAsyncMessage(const nsString& aMsg,
-                                  const ClonedMessageData& aData,
-                                  const InfallibleTArray<CpowEntry>& aCpows,
-                                  const IPC::Principal& aPrincipal) MOZ_OVERRIDE;
-
     virtual bool RecvFilePathUpdateNotify(const nsString& aType,
                                           const nsString& aStorageName,
                                           const nsString& aFilePath,
@@ -552,8 +521,6 @@ private:
      * expensive.
      */
     nsString mAppName;
-
-    nsRefPtr<nsFrameMessageManager> mMessageManager;
 
     // After we initiate shutdown, we also start a timer to ensure
     // that even content processes that are 100% blocked (say from
