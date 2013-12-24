@@ -2758,6 +2758,10 @@ class _GenerateProtocolActorCode(ipdl.ast.Visitor):
                 _makeForwardDeclForActor(actor.ptype, actor.side),
                 Whitespace.NL
             ])
+            self.protocolCxxIncludes.append(
+                CppDirective(
+                    'include',
+                    '"%s.h"'% (_protocolHeaderName(actor.ptype._ast, actor.side))))
 
         self.cls.addstmt(Label.PROTECTED)
         for typedef in p.cxxTypedefs():
@@ -4239,7 +4243,7 @@ class _GenerateProtocolActorCode(ipdl.ast.Visitor):
 
             case.addstmts([
                 StmtDecl(Decl(Type('Transport', ptr=1), tvar.name)),
-                StmtDecl(Decl(Type(_actorName(actor.ptype.name(), self.side),
+                StmtDecl(Decl(Type(_actorName(actor.ptype.name(), actor.side),
                                    ptr=1), pvar.name)),
                 iffailopen,
                 iffailalloc,
