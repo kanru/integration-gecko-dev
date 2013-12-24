@@ -14,6 +14,8 @@
 
 #include "ContentBridgeChild.h"
 #include "ContentChild.h"
+#include "ContentContentChild.h"
+#include "ContentContentParent.h"
 #include "CrashReporterChild.h"
 #include "TabChild.h"
 
@@ -649,6 +651,20 @@ ContentChild::AllocPBackgroundChild(Transport* aTransport,
                                     ProcessId aOtherProcess)
 {
     return BackgroundChild::Alloc(aTransport, aOtherProcess);
+}
+
+PContentContentParent*
+ContentChild::AllocPContentContentParent(mozilla::ipc::Transport* aTransport,
+                                         base::ProcessId aOtherProcess)
+{
+    return ContentContentParent::Create(aTransport, aOtherProcess);
+}
+
+PContentContentChild*
+ContentChild::AllocPContentContentChild(mozilla::ipc::Transport* aTransport,
+                                        base::ProcessId aOtherProcess)
+{
+    return ContentContentChild::Create(aTransport, aOtherProcess);
 }
 
 bool

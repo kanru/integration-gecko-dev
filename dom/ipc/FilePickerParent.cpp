@@ -114,7 +114,7 @@ void
 FilePickerParent::SendFiles(const nsCOMArray<nsIDOMFile>& aDomfiles)
 {
   ContentBridgeParent* cb = static_cast<ContentBridgeParent*>(Manager()->Manager());
-  ContentParent* parent = static_cast<ContentParent*>(cb->Manager());
+  ContentParent* parent = cb->GetContentParent();
   InfallibleTArray<PBlobParent*> files;
 
   for (unsigned i = 0; i < aDomfiles.Length(); i++) {

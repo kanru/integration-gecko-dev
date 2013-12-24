@@ -756,7 +756,7 @@ ParticularProcessPriorityManager::OnRemoteBrowserFrameShown(nsISupports* aSubjec
   fl->GetTabParent(getter_AddRefs(tp));
   NS_ENSURE_TRUE_VOID(tp);
 
-  if (static_cast<TabParent*>(tp.get())->Manager()->Manager() != static_cast<PContentParent*>(mContentParent)) {
+  if (static_cast<TabParent*>(tp.get())->Manager()->GetContentParent() != static_cast<PContentParent*>(mContentParent)) {
     return;
   }
 
@@ -769,7 +769,7 @@ ParticularProcessPriorityManager::OnTabParentDestroyed(nsISupports* aSubject)
   nsCOMPtr<nsITabParent> tp = do_QueryInterface(aSubject);
   NS_ENSURE_TRUE_VOID(tp);
 
-  if (static_cast<TabParent*>(tp.get())->Manager()->Manager() != static_cast<PContentParent*>(mContentParent)) {
+  if (static_cast<TabParent*>(tp.get())->Manager()->GetContentParent() != static_cast<PContentParent*>(mContentParent)) {
     return;
   }
 
@@ -788,7 +788,7 @@ ParticularProcessPriorityManager::OnFrameloaderVisibleChanged(nsISupports* aSubj
     return;
   }
 
-  if (static_cast<TabParent*>(tp.get())->Manager()->Manager() != static_cast<PContentParent*>(mContentParent)) {
+  if (static_cast<TabParent*>(tp.get())->Manager()->GetContentParent() != static_cast<PContentParent*>(mContentParent)) {
     return;
   }
 

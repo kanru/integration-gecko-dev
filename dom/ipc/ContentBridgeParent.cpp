@@ -7,6 +7,7 @@
 #include "ContentBridgeParent.h"
 
 #include "Blob.h"
+#include "ContentContentParent.h"
 #include "ContentParent.h"
 #include "JavaScriptParent.h"
 #include "PermissionMessageUtils.h"
@@ -20,7 +21,8 @@
 namespace mozilla {
 namespace dom {
 
-ContentBridgeParent::ContentBridgeParent()
+ContentBridgeParent::ContentBridgeParent(mozilla::ipc::IProtocol* aManager)
+  : mManager(aManager)
 {
   mMessageManager = nsFrameMessageManager::NewProcessMessageManager(this);
 }
@@ -145,6 +147,22 @@ ContentBridgeParent::GetCPOWManager()
   return actor;
 }
 
+ContentParent*
+ContentBridgeParent::GetContentParent()
+{
+  if (XRE_GetProcessType() == GeckoProcessType_Default) {
+    return reinterpret_cast<ContentParent*>(mManager);
+  } else {
+    return nullptr;
+  }
+}
+
+ContentContentParent*
+ContentBridgeParent::GetContentContentParent()
+{
+  return nullptr;
+}
+
 bool
 ContentBridgeParent::DoSendAsyncMessage(JSContext* aCx,
                                         const nsAString& aMessage,
@@ -166,25 +184,28 @@ ContentBridgeParent::DoSendAsyncMessage(JSContext* aCx,
 bool
 ContentBridgeParent::CheckPermission(const nsAString& aPermission)
 {
-  return AssertAppProcessPermission(static_cast<ContentParent*>(Manager()), NS_ConvertUTF16toUTF8(aPermission).get());
+  return AssertAppProcessPermission(GetContentParent(),
+                                    NS_ConvertUTF16toUTF8(aPermission).get());
 }
 
 bool
 ContentBridgeParent::CheckManifestURL(const nsAString& aManifestURL)
 {
-  return AssertAppProcessManifestURL(static_cast<ContentParent*>(Manager()), NS_ConvertUTF16toUTF8(aManifestURL).get());
+  return AssertAppProcessManifestURL(GetContentParent(),
+                                     NS_ConvertUTF16toUTF8(aManifestURL).get());
 }
 
 bool
 ContentBridgeParent::CheckAppHasPermission(const nsAString& aPermission)
 {
-  return AssertAppHasPermission(static_cast<ContentParent*>(Manager()), NS_ConvertUTF16toUTF8(aPermission).get());
+  return AssertAppHasPermission(GetContentParent(),
+                                NS_ConvertUTF16toUTF8(aPermission).get());
 }
 
 bool
 ContentBridgeParent::CheckAppHasStatus(unsigned short aStatus)
 {
-  return AssertAppHasStatus(static_cast<ContentParent*>(Manager()), aStatus);
+  return AssertAppHasStatus(GetContentParent(), aStatus);
 }
 
 PBlobParent*
@@ -300,7 +321,7 @@ ContentBridgeParent::RecvSyncMessage(const nsString& aMsg,
 {
   nsIPrincipal* principal = aPrincipal;
   if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
-      principal && !AssertAppPrincipal(static_cast<ContentParent*>(Manager()), principal)) {
+      principal && !AssertAppPrincipal(GetContentParent(), principal)) {
     return false;
   }
 
@@ -324,7 +345,7 @@ ContentBridgeParent::AnswerRpcMessage(const nsString& aMsg,
 {
   nsIPrincipal* principal = aPrincipal;
   if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
-      principal && !AssertAppPrincipal(static_cast<ContentParent*>(Manager()), principal)) {
+      principal && !AssertAppPrincipal(GetContentParent(), principal)) {
     return false;
   }
 
@@ -346,7 +367,7 @@ ContentBridgeParent::RecvAsyncMessage(const nsString& aMsg,
 {
   nsIPrincipal* principal = aPrincipal;
   if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
-      principal && !AssertAppPrincipal(static_cast<ContentParent*>(Manager()), principal)) {
+      principal && !AssertAppPrincipal(GetContentParent(), principal)) {
     return false;
   }
 

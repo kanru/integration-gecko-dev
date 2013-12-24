@@ -285,6 +285,11 @@ private:
     virtual PContentBridgeChild* AllocPContentBridgeChild() MOZ_OVERRIDE;
     virtual bool DeallocPContentBridgeChild(PContentBridgeChild* aActor) MOZ_OVERRIDE;
 
+    virtual PContentContentParent* AllocPContentContentParent(
+        Transport* aTransport, ProcessId aOtherProcess) MOZ_OVERRIDE;
+    virtual PContentContentChild* AllocPContentContentChild(
+        Transport* aTransport, ProcessId aOtherProcess) MOZ_OVERRIDE;
+
     /**
      * Exit *now*.  Do not shut down XPCOM, do not pass Go, do not run
      * static destructors, do not collect $200.

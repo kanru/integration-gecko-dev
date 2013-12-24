@@ -3070,7 +3070,7 @@ ContentParent::RecvBackUpXResources(const FileDescriptor& aXSocketFd)
 PContentBridgeParent*
 ContentParent::AllocPContentBridgeParent()
 {
-  ContentBridgeParent* cb = new ContentBridgeParent();
+  ContentBridgeParent* cb = new ContentBridgeParent(this);
   // We release this ref in DeallocPContentBridgeParent()
   cb->AddRef();
   return cb;

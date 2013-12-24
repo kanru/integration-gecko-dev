@@ -11,6 +11,7 @@ include protocol PBluetooth;
 include protocol PBrowser;
 include protocol PCompositor;
 include protocol PContentBridge;
+include protocol PContentContent;
 include protocol PCrashReporter;
 include protocol PDeviceStorageRequest;
 include protocol PExternalHelperApp;

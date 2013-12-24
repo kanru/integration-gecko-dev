@@ -2106,7 +2106,7 @@ nsFrameLoader::TryRemoteBrowser()
   nsCOMPtr<Element> ownerElement = mOwnerContent;
   mRemoteBrowser = ContentParent::CreateBrowserOrApp(context, ownerElement);
   if (mRemoteBrowser) {
-    ContentParent* content = static_cast<ContentParent*>(mRemoteBrowser->Manager()->Manager());
+    ContentParent* content = mRemoteBrowser->Manager()->GetContentParent();
     mChildID = content->ChildID();
     nsCOMPtr<nsIDocShellTreeItem> rootItem;
     parentAsItem->GetRootTreeItem(getter_AddRefs(rootItem));
@@ -2511,7 +2511,7 @@ nsFrameLoader::SetRemoteBrowser(nsITabParent* aTabParent)
   mRemoteFrame = true;
   mRemoteBrowser = static_cast<TabParent*>(aTabParent);
   if (mRemoteBrowser) {
-    ContentParent* content = static_cast<ContentParent*>(mRemoteBrowser->Manager()->Manager());
+    ContentParent* content = mRemoteBrowser->Manager()->GetContentParent();
     mChildID = content->ChildID();
   } else {
     mChildID = 0;

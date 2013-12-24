@@ -7,6 +7,7 @@
 include protocol PBlob;
 include protocol PBrowser;
 include protocol PContent;
+include protocol PContentContent;
 include protocol PJavaScript;
 include DOMTypes;
 include JavaScriptTypes;
@@ -19,7 +20,7 @@ namespace dom {
 
 intr protocol PContentBridge
 {
-    manager PContent;
+    manager PContent or PContentContent;
 
     manages PBlob;
     manages PBrowser;

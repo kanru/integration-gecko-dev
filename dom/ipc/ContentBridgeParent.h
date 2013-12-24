@@ -21,9 +21,14 @@ class JavaScriptParent;
 class PJavaScriptParent;
 } // namespace jsipc
 
+namespace ipc {
+class IProtocol;
+} // namespace ipc
+
 namespace dom {
 
 class ContentParent;
+class ContentContentParent;
 
 class ContentBridgeParent : public PContentBridgeParent
                           , public mozilla::dom::ipc::MessageManagerCallback
@@ -33,7 +38,7 @@ class ContentBridgeParent : public PContentBridgeParent
   friend ContentParent;
 
 public:
-  ContentBridgeParent();
+  ContentBridgeParent(mozilla::ipc::IProtocol* aManager);
   virtual ~ContentBridgeParent() {}
 
   BlobParent* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
@@ -51,6 +56,9 @@ public:
   virtual bool CheckManifestURL(const nsAString& aManifestURL) MOZ_OVERRIDE;
   virtual bool CheckAppHasPermission(const nsAString& aPermission) MOZ_OVERRIDE;
   virtual bool CheckAppHasStatus(unsigned short aStatus) MOZ_OVERRIDE;
+
+  ContentParent* GetContentParent();
+  ContentContentParent* GetContentContentParent();
 
 // IPDL methods
 public:
@@ -93,6 +101,7 @@ private:
 // end IPDL methods
 
   nsRefPtr<nsFrameMessageManager> mMessageManager;
+  mozilla::ipc::IProtocol* mManager;
 };
 
 } // namespace dom

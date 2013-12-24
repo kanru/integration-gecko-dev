@@ -295,14 +295,14 @@ TabParent::Destroy()
   }
   mIsDestroyed = true;
 
-  static_cast<ContentParent*>(Manager()->Manager())->NotifyTabDestroying(this);
+  Manager()->GetContentParent()->NotifyTabDestroying(this);
   mMarkedDestroying = true;
 }
 
 bool
 TabParent::Recv__delete__()
 {
-  static_cast<ContentParent*>(Manager()->Manager())->NotifyTabDestroyed(this, mMarkedDestroying);
+  Manager()->GetContentParent()->NotifyTabDestroyed(this, mMarkedDestroying);
   return true;
 }
 
@@ -907,7 +907,7 @@ TabParent::RecvSyncMessage(const nsString& aMessage,
 {
   nsIPrincipal* principal = aPrincipal;
   ContentBridgeParent* parent = Manager();
-  ContentParent* cp = static_cast<ContentParent*>(parent->Manager());
+  ContentParent* cp = parent->GetContentParent();
   if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
       principal && !AssertAppPrincipal(cp, principal)) {
     return false;
@@ -927,7 +927,7 @@ TabParent::AnswerRpcMessage(const nsString& aMessage,
 {
   nsIPrincipal* principal = aPrincipal;
   ContentBridgeParent* parent = Manager();
-  ContentParent* cp = static_cast<ContentParent*>(parent->Manager());
+  ContentParent* cp = parent->GetContentParent();
   if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
       principal && !AssertAppPrincipal(cp, principal)) {
     return false;
@@ -946,7 +946,7 @@ TabParent::RecvAsyncMessage(const nsString& aMessage,
 {
   nsIPrincipal* principal = aPrincipal;
   ContentBridgeParent* parent = Manager();
-  ContentParent* cp = static_cast<ContentParent*>(parent->Manager());
+  ContentParent* cp = parent->GetContentParent();
   if (!Preferences::GetBool("dom.testing.ignore_ipc_principal", false) &&
       principal && !AssertAppPrincipal(cp, principal)) {
     return false;
@@ -1602,7 +1602,7 @@ TabParent::RecvPIndexedDBConstructor(PIndexedDBParent* aActor,
   }
 
   ContentBridgeParent* parent = Manager();
-  ContentParent* contentParent = static_cast<ContentParent*>(parent->Manager());
+  ContentParent* contentParent = parent->GetContentParent();
   NS_ASSERTION(contentParent, "Null manager?!");
 
   nsRefPtr<IDBFactory> factory;
