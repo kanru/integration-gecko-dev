@@ -104,7 +104,17 @@ Decoder::Write(const char* aBuffer, uint32_t aCount, DecodeStrategy aStrategy)
   }
 
   // Pass the data along to the implementation
-  WriteInternal(aBuffer, aCount, aStrategy);
+  if (IsSizeDecode()) {
+    PostSize(2, 2, Orientation());
+  } else if (mInFrame) {
+    mImageData[2] = 0xff;
+    mImageData[4] = 0xff;
+    mImageData[9] = 0xff;
+    mImageData[13] = 0xff;
+    mImageData[14] = 0xff;
+    PostFrameStop(FrameBlender::kFrameOpaque);
+    PostDecodeDone();
+  }
 
   // If we're a synchronous decoder and we need a new frame to proceed, let's
   // create one and call it again.
