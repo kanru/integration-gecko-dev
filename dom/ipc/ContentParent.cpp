@@ -487,6 +487,8 @@ ContentParent::MaybeTakePreallocatedAppProcess(const nsAString& aAppManifestURL,
 /*static*/ void
 ContentParent::StartUp()
 {
+    sCanLaunchSubprocesses = true;
+
     if (XRE_GetProcessType() != GeckoProcessType_Default) {
         return;
     }
@@ -495,8 +497,6 @@ ContentParent::StartUp()
     RegisterStrongMemoryReporter(new ContentParentsMemoryReporter());
 
     BackgroundChild::Startup();
-
-    sCanLaunchSubprocesses = true;
 
     // Try to preallocate a process that we can transform into an app later.
     PreallocatedProcessManager::AllocateAfterDelay();
@@ -681,10 +681,6 @@ bool
 ContentParent::RecvCreateChildProcess(const IPCTabContext& aContext,
                                       uint64_t* id)
 {
-    /*if (!CanOpenBrowser(aContext)) {
-        return false;
-    }*/
-
     nsRefPtr<ContentParent> cp = GetNewOrUsed(/* isBrowserElement = */ true,
                                               this);
     *id = cp->mChildID;

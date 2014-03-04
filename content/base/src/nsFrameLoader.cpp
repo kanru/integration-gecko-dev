@@ -2059,20 +2059,6 @@ nsFrameLoader::TryRemoteBrowser()
     }
   }
 
-  uint32_t chromeFlags = 0;
-  nsCOMPtr<nsIDocShellTreeOwner> parentOwner;
-  if (NS_FAILED(parentAsItem->GetTreeOwner(getter_AddRefs(parentOwner))) ||
-      !parentOwner) {
-    return false;
-  }
-  nsCOMPtr<nsIXULWindow> window(do_GetInterface(parentOwner));
-  if (!window) {
-    return false;
-  }
-  if (NS_FAILED(window->GetChromeFlags(&chromeFlags))) {
-    return false;
-  }
-
   PROFILER_LABEL("nsFrameLoader", "CreateRemoteBrowser");
 
   MutableTabContext context;

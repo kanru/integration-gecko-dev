@@ -358,6 +358,7 @@ ContentChild::ContentChild()
 #ifdef ANDROID
    ,mScreenSize(0, 0)
 #endif
+  , mLastContentConnection(nullptr)
 {
     // This process is a content process, so it's clearly running in
     // multiprocess mode!
