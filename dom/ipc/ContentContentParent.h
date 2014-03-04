@@ -12,6 +12,8 @@
 namespace mozilla {
 namespace dom {
 
+class ContentBridgeParent;
+
 class ContentContentParent : public PContentContentParent
 {
   NS_INLINE_DECL_REFCOUNTING(ContentContentParent)
@@ -22,6 +24,7 @@ public:
   static ContentContentParent*
   Create(Transport *aTransport, ProcessId aOtherProcess);
 
+  ContentBridgeParent* GetContentBridge();
 private:
   virtual PContentBridgeParent* AllocPContentBridgeParent() MOZ_OVERRIDE;
 

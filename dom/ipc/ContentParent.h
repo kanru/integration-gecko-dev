@@ -90,7 +90,8 @@ public:
     static void RunAfterPreallocatedProcessReady(nsIRunnable* aRequest);
 
     static already_AddRefed<ContentParent>
-    GetNewOrUsed(bool aForBrowserElement = false);
+    GetNewOrUsed(bool aForBrowserElement = false,
+                 ContentParent* aOpener = nullptr);
 
     /**
      * Create a subprocess suitable for use as a preallocated app process.
@@ -142,6 +143,10 @@ public:
     }
 
     int32_t Pid();
+
+    ContentParent* Opener() {
+        return mOpener;
+    }
 
     bool NeedsPermissionsUpdate() {
         return mSendPermissionUpdates;
@@ -240,6 +245,7 @@ private:
     // No more than one of !!aApp, aIsForBrowser, and aIsForPreallocated may be
     // true.
     ContentParent(mozIApplication* aApp,
+                  ContentParent* aOpener,
                   bool aIsForBrowser,
                   bool aIsForPreallocated,
                   ChildPrivileges aOSPrivileges = base::PRIVILEGES_DEFAULT,
@@ -302,6 +308,10 @@ private:
      * is an abnormal shutdown (e.g. a crash).
      */
     void ShutDownProcess(bool aCloseWithError);
+
+    virtual bool RecvCreateChildProcess(const IPCTabContext& context,
+                                        uint64_t* id) MOZ_OVERRIDE;
+    virtual bool AnswerBridgeToChildProcess(const uint64_t& id) MOZ_OVERRIDE;
 
     PCompositorParent*
     AllocPCompositorParent(mozilla::ipc::Transport* aTransport,
@@ -508,6 +518,7 @@ private:
     // details.
 
     GeckoChildProcessHost* mSubprocess;
+    ContentParent* mOpener;
     base::ChildPrivileges mOSPrivileges;
 
     uint64_t mChildID;

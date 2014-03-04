@@ -152,14 +152,16 @@ ContentBridgeParent::GetContentParent()
 {
   if (XRE_GetProcessType() == GeckoProcessType_Default) {
     return reinterpret_cast<ContentParent*>(mManager);
-  } else {
-    return nullptr;
   }
+  return nullptr;
 }
 
 ContentContentParent*
 ContentBridgeParent::GetContentContentParent()
 {
+  if (XRE_GetProcessType() == GeckoProcessType_Content) {
+    return reinterpret_cast<ContentContentParent*>(mManager);
+  }
   return nullptr;
 }
 

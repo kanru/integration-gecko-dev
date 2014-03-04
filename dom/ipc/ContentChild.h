@@ -42,6 +42,7 @@ class ConsoleListener;
 class PStorageChild;
 class ClonedMessageData;
 class ContentBridgeChild;
+class ContentContentParent;
 class IPCTabContext;
 
 class ContentChild : public PContentChild
@@ -270,6 +271,14 @@ public:
     BlobChild* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
 
     ContentBridgeChild* GetContentBridge();
+
+    ContentContentParent* GetLastContentConnection() {
+        MOZ_ASSERT(mLastContentConnection);
+        ContentContentParent* parent = mLastContentConnection;
+        mLastContentConnection = nullptr;
+        return parent;
+    }
+    ContentContentParent* mLastContentConnection;
 
 protected:
     virtual bool RecvPBrowserConstructor(PBrowserChild* actor,

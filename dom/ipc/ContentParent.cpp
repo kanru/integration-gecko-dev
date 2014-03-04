@@ -4,6 +4,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <map>
+#include <set>
+
 #include "mozilla/DebugOnly.h"
 
 #include "base/basictypes.h"
@@ -429,6 +432,7 @@ ContentParent::RunNuwaProcess()
     MOZ_ASSERT(NS_IsMainThread());
     nsRefPtr<ContentParent> nuwaProcess =
         new ContentParent(/* aApp = */ nullptr,
+                          /* aOpener = */ nullptr,
                           /* aIsForBrowser = */ false,
                           /* aIsForPreallocated = */ true,
                           // Final privileges are set when we
@@ -448,6 +452,7 @@ ContentParent::PreallocateAppProcess()
 {
     nsRefPtr<ContentParent> process =
         new ContentParent(/* app = */ nullptr,
+                          /* aOpener = */ nullptr,
                           /* isForBrowserElement = */ false,
                           /* isForPreallocated = */ true,
                           // Final privileges are set when we
@@ -558,7 +563,7 @@ ContentParent::JoinAllSubprocesses()
 }
 
 /*static*/ already_AddRefed<ContentParent>
-ContentParent::GetNewOrUsed(bool aForBrowserElement)
+ContentParent::GetNewOrUsed(bool aForBrowserElement, ContentParent* aOpener)
 {
     if (!sNonAppContentParents)
         sNonAppContentParents = new nsTArray<ContentParent*>();
@@ -568,14 +573,21 @@ ContentParent::GetNewOrUsed(bool aForBrowserElement)
         maxContentProcesses = 1;
 
     if (sNonAppContentParents->Length() >= uint32_t(maxContentProcesses)) {
-        uint32_t idx = rand() % sNonAppContentParents->Length();
-        nsRefPtr<ContentParent> p = (*sNonAppContentParents)[idx];
-        NS_ASSERTION(p->IsAlive(), "Non-alive contentparent in sNonAppContentParents?");
-        return p.forget();
+        uint32_t startIdx = rand() % sNonAppContentParents->Length();
+        uint32_t currIdx = startIdx;
+        do {
+            nsRefPtr<ContentParent> p = (*sNonAppContentParents)[currIdx];
+            NS_ASSERTION(p->IsAlive(), "Non-alive contentparent in sNonAppContentParents?");
+            if (p->mOpener == aOpener) {
+                return p.forget();
+            }
+            currIdx = (currIdx + 1) % sNonAppContentParents->Length();
+        } while (currIdx != startIdx);
     }
 
     nsRefPtr<ContentParent> p =
         new ContentParent(/* app = */ nullptr,
+                          aOpener,
                           aForBrowserElement,
                           /* isForPreallocated = */ false,
                           base::PRIVILEGES_DEFAULT,
@@ -660,6 +672,49 @@ ContentParent::RunAfterPreallocatedProcessReady(nsIRunnable* aRequest)
 #endif
 }
 
+typedef std::map<ContentParent*, std::set<ContentParent*> > GrandchildMap;
+static GrandchildMap sGrandchildProcessMap;
+
+std::map<uint64_t, ContentParent*> sContentParentMap;
+
+bool
+ContentParent::RecvCreateChildProcess(const IPCTabContext& aContext,
+                                      uint64_t* id)
+{
+    /*if (!CanOpenBrowser(aContext)) {
+        return false;
+    }*/
+
+    nsRefPtr<ContentParent> cp = GetNewOrUsed(/* isBrowserElement = */ true,
+                                              this);
+    *id = cp->mChildID;
+    sContentParentMap[*id] = cp;
+    auto iter = sGrandchildProcessMap.find(this);
+    if (iter == sGrandchildProcessMap.end()) {
+        std::set<ContentParent*> children;
+        children.insert(cp);
+        sGrandchildProcessMap[this] = children;
+    } else {
+        iter->second.insert(cp);
+    }
+    return true;
+}
+
+bool
+ContentParent::AnswerBridgeToChildProcess(const uint64_t& id)
+{
+    ContentParent* cp = sContentParentMap[id];
+    auto iter = sGrandchildProcessMap.find(this);
+    if (iter != sGrandchildProcessMap.end() &&
+        iter->second.find(cp) != iter->second.end()) {
+        return PContentContent::Bridge(this, cp);
+    } else {
+        // You can't bridge to a process you didn't open!
+        KillHard();
+        return false;
+    }
+}
+
 /*static*/ TabParent*
 ContentParent::CreateBrowserOrApp(const TabContext& aContext,
                                   Element* aFrameElement)
@@ -669,28 +724,48 @@ ContentParent::CreateBrowserOrApp(const TabContext& aContext,
     }
 
     if (aContext.IsBrowserElement() || !aContext.HasOwnApp()) {
-        if (nsRefPtr<ContentParent> cp = GetNewOrUsed(aContext.IsBrowserElement())) {
-            uint32_t chromeFlags = 0;
+        uint32_t chromeFlags = 0;
 
-            // Propagate the private-browsing status of the element's parent
-            // docshell to the remote docshell, via the chrome flags.
-            nsCOMPtr<Element> frameElement = do_QueryInterface(aFrameElement);
-            MOZ_ASSERT(frameElement);
-            nsIDocShell* docShell =
-                frameElement->OwnerDoc()->GetWindow()->GetDocShell();
-            MOZ_ASSERT(docShell);
-            nsCOMPtr<nsILoadContext> loadContext = do_QueryInterface(docShell);
-            if (loadContext && loadContext->UsePrivateBrowsing()) {
-                chromeFlags |= nsIWebBrowserChrome::CHROME_PRIVATE_WINDOW;
-            }
-            bool affectLifetime;
-            docShell->GetAffectPrivateSessionLifetime(&affectLifetime);
-            if (affectLifetime) {
-                chromeFlags |= nsIWebBrowserChrome::CHROME_PRIVATE_LIFETIME;
-            }
+        // Propagate the private-browsing status of the element's parent
+        // docshell to the remote docshell, via the chrome flags.
+        nsCOMPtr<Element> frameElement = do_QueryInterface(aFrameElement);
+        MOZ_ASSERT(frameElement);
+        nsIDocShell* docShell =
+            frameElement->OwnerDoc()->GetWindow()->GetDocShell();
+        MOZ_ASSERT(docShell);
+        nsCOMPtr<nsILoadContext> loadContext = do_QueryInterface(docShell);
+        if (loadContext && loadContext->UsePrivateBrowsing()) {
+            chromeFlags |= nsIWebBrowserChrome::CHROME_PRIVATE_WINDOW;
+        }
+        bool affectLifetime;
+        docShell->GetAffectPrivateSessionLifetime(&affectLifetime);
+        if (affectLifetime) {
+            chromeFlags |= nsIWebBrowserChrome::CHROME_PRIVATE_LIFETIME;
+        }
 
-            ContentBridgeParent* cb = cp->GetContentBridge();
-            nsRefPtr<TabParent> tp(new TabParent(cb, aContext, chromeFlags));
+        ContentBridgeParent* cb;
+        nsRefPtr<TabParent> tp;
+        // If we are in a child process, we want to open a sibling and bridge.
+        if (XRE_GetProcessType() != GeckoProcessType_Default) {
+            MOZ_ASSERT(aContext.IsBrowserElement());
+            ContentChild* child = ContentChild::GetSingleton();
+            uint64_t id;
+            if (!child->SendCreateChildProcess(aContext.AsIPCTabContext(),
+                                               &id)) {
+                return nullptr;
+            }
+            if (!child->CallBridgeToChildProcess(id)) {
+                return nullptr;
+            }
+            ContentContentParent* ccp = child->GetLastContentConnection();
+            cb = ccp->GetContentBridge();
+            tp = new TabParent(cb, aContext, chromeFlags);
+        } else if (nsRefPtr<ContentParent> cp =
+                   GetNewOrUsed(aContext.IsBrowserElement())) {
+            cb = cp->GetContentBridge();
+            tp = new TabParent(cb, aContext, chromeFlags);
+        }
+        if (tp) {
             tp->SetOwnerElement(aFrameElement);
 
             PBrowserParent* browser = cb->SendPBrowserConstructor(
@@ -746,6 +821,7 @@ ContentParent::CreateBrowserOrApp(const TabContext& aContext,
 #endif
             NS_WARNING("Unable to use pre-allocated app process");
             p = new ContentParent(ownApp,
+                                  /* aOpener = */ nullptr,
                                   /* isForBrowserElement = */ false,
                                   /* isForPreallocated = */ false,
                                   privs,
@@ -1061,6 +1137,13 @@ ContentParent::MarkAsDead()
     }
 
     mIsAlive = false;
+
+    sGrandchildProcessMap.erase(this);
+    for (auto iter = sGrandchildProcessMap.begin();
+         iter != sGrandchildProcessMap.end();
+         iter++) {
+        iter->second.erase(this);
+    }
 }
 
 void
@@ -1249,6 +1332,19 @@ ContentParent::ActorDestroy(ActorDestroyReason why)
     // This runnable ensures that a reference to |this| lives on at
     // least until after the current task finishes running.
     NS_DispatchToCurrentThread(new DelayedDeleteContentParentTask(this));
+
+    // Destroy any processes created by this ContentParent
+    auto iter = sGrandchildProcessMap.find(this);
+    if (iter != sGrandchildProcessMap.end()) {
+        for(auto child = iter->second.begin();
+            child != iter->second.end();
+            child++) {
+            MessageLoop::current()->PostTask(
+              FROM_HERE,
+              NewRunnableMethod(*child, &ContentParent::ShutDownProcess,
+                                /* closeWithError */ false));
+        }
+    }
 }
 
 void
@@ -1341,12 +1437,14 @@ ContentParent::InitializeMembers()
 }
 
 ContentParent::ContentParent(mozIApplication* aApp,
+                             ContentParent* aOpener,
                              bool aIsForBrowser,
                              bool aIsForPreallocated,
                              ChildPrivileges aOSPrivileges,
                              ProcessPriority aInitialPriority /* = PROCESS_PRIORITY_FOREGROUND */,
                              bool aIsNuwaProcess /* = false */)
-    : mOSPrivileges(aOSPrivileges)
+    : mOpener(aOpener)
+    , mOSPrivileges(aOSPrivileges)
     , mIsForBrowser(aIsForBrowser)
     , mIsNuwaProcess(aIsNuwaProcess)
 {
@@ -1424,11 +1522,13 @@ FindFdProtocolFdMapping(const nsTArray<ProtocolFdMapping>& aFds,
  * For Nuwa.
  */
 ContentParent::ContentParent(ContentParent* aTemplate,
+                             ContentParent* aOpener,
                              const nsAString& aAppManifestURL,
                              base::ProcessHandle aPid,
                              const nsTArray<ProtocolFdMapping>& aFds,
                              ChildPrivileges aOSPrivileges)
-    : mOSPrivileges(aOSPrivileges)
+    : mOpener(aOpener)
+    , mOSPrivileges(aOSPrivileges)
     , mAppManifestURL(aAppManifestURL)
     , mIsForBrowser(false)
     , mIsNuwaProcess(false)
@@ -1942,6 +2042,7 @@ ContentParent::RecvAddNewProcess(const uint32_t& aPid,
 #ifdef MOZ_NUWA_PROCESS
     nsRefPtr<ContentParent> content;
     content = new ContentParent(this,
+                                /* aOpener = */ nullptr,
                                 MAGIC_PREALLOCATED_APP_MANIFEST_URL,
                                 aPid,
                                 aFds,

@@ -67,5 +67,16 @@ ContentContentParent::DeallocPContentBridgeParent(PContentBridgeParent* aActor)
   return true;
 }
 
+ContentBridgeParent*
+ContentContentParent::GetContentBridge()
+{
+  if (ManagedPContentBridgeParent().Length()) {
+    return static_cast<ContentBridgeParent*>(ManagedPContentBridgeParent()[0]);
+  }
+  ContentBridgeParent* actor = static_cast<ContentBridgeParent*>(
+    SendPContentBridgeConstructor());
+  return actor;
+}
+
 } // namespace dom
 } // namespace mozilla

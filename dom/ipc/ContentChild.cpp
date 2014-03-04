@@ -657,7 +657,11 @@ PContentContentParent*
 ContentChild::AllocPContentContentParent(mozilla::ipc::Transport* aTransport,
                                          base::ProcessId aOtherProcess)
 {
-    return ContentContentParent::Create(aTransport, aOtherProcess);
+    MOZ_ASSERT(!mLastContentConnection);
+    mLastContentConnection =
+      static_cast<ContentContentParent*>(
+          ContentContentParent::Create(aTransport, aOtherProcess));
+    return mLastContentConnection;
 }
 
 PContentContentChild*
