@@ -2086,19 +2086,21 @@ nsFrameLoader::TryRemoteBrowser()
   nsCOMPtr<Element> ownerElement = mOwnerContent;
   mRemoteBrowser = ContentParent::CreateBrowserOrApp(context, ownerElement);
   if (mRemoteBrowser) {
-    ContentParent* content = mRemoteBrowser->Manager()->GetContentParent();
-    mChildID = content->ChildID();
+    // XXX ContentParent* content = mRemoteBrowser->Manager()->GetContentParent();
+    // XXX mChildID = content->ChildID();
     nsCOMPtr<nsIDocShellTreeItem> rootItem;
     parentAsItem->GetRootTreeItem(getter_AddRefs(rootItem));
     nsCOMPtr<nsIDOMWindow> rootWin = do_GetInterface(rootItem);
     nsCOMPtr<nsIDOMChromeWindow> rootChromeWin = do_QueryInterface(rootWin);
-    NS_ABORT_IF_FALSE(rootChromeWin, "How did we not get a chrome window here?");
+    // XXX NS_ABORT_IF_FALSE(rootChromeWin, "How did we not get a chrome window here?");
 
-    nsCOMPtr<nsIBrowserDOMWindow> browserDOMWin;
-    rootChromeWin->GetBrowserDOMWindow(getter_AddRefs(browserDOMWin));
-    mRemoteBrowser->SetBrowserDOMWindow(browserDOMWin);
+    if (rootChromeWin) {
+      nsCOMPtr<nsIBrowserDOMWindow> browserDOMWin;
+      rootChromeWin->GetBrowserDOMWindow(getter_AddRefs(browserDOMWin));
+      mRemoteBrowser->SetBrowserDOMWindow(browserDOMWin);
+    }
 
-    mContentParent = content;
+    // XXX mContentParent = content;
 
     if (mOwnerContent->AttrValueIs(kNameSpaceID_None,
                                    nsGkAtoms::mozpasspointerevents,
@@ -2490,7 +2492,7 @@ nsFrameLoader::SetRemoteBrowser(nsITabParent* aTabParent)
   MOZ_ASSERT(!mCurrentRemoteFrame);
   mRemoteFrame = true;
   mRemoteBrowser = static_cast<TabParent*>(aTabParent);
-  if (mRemoteBrowser) {
+  if (mRemoteBrowser && XRE_GetProcessType() == GeckoProcessType_Default) {
     ContentParent* content = mRemoteBrowser->Manager()->GetContentParent();
     mChildID = content->ChildID();
   } else {
