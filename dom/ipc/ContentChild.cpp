@@ -160,6 +160,10 @@
 #include "mozilla/net/NeckoMessageUtils.h"
 #include "mozilla/RemoteSpellCheckEngineChild.h"
 
+#ifdef MOZ_TASK_TRACER
+#include "GeckoTaskTracerImpl.h"
+#endif
+
 using namespace base;
 using namespace mozilla;
 using namespace mozilla::docshell;
@@ -645,6 +649,11 @@ ContentChild::SetProcessName(const nsAString& aName, bool aDontOverride)
     if (aDontOverride) {
         mCanOverrideProcessName = false;
     }
+
+#ifdef MOZ_TASK_TRACER
+  mozilla::tasktracer::SetThreadName(NS_LossyConvertUTF16toASCII(aName).get(),
+                                     mozilla::tasktracer::TYPE_PROCESS);
+#endif
 }
 
 void
