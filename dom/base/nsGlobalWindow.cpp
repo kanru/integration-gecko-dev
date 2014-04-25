@@ -228,6 +228,10 @@
 #include "nsPISocketTransportService.h"
 #endif
 
+#ifdef MOZ_TASK_TRACER
+#include "GeckoTaskTracer.h"
+#endif
+
 // Apple system headers seem to have a check() macro.  <sigh>
 #ifdef check
 class nsIScriptTimeoutHandler;
@@ -6055,6 +6059,12 @@ nsGlobalWindow::Dump(const nsAString& aStr)
   }
 
   char *cstr = ToNewUTF8String(aStr);
+
+#ifdef MOZ_TASK_TRACER
+  if (strncmp(cstr, "ttd:", 15) == 0) {
+    mozilla::tasktracer::AddLabel("%s", cstr);
+  }
+#endif
 
 #if defined(XP_MACOSX)
   // have to convert \r to \n so that printing to the console works
