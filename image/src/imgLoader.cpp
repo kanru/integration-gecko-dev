@@ -706,8 +706,7 @@ nsresult imgLoader::CreateNewProxyForRequest(imgRequest *aRequest, nsILoadGroup 
      proxy calls to |aObserver|.
    */
 
-  imgRequestProxy *proxyRequest = new imgRequestProxy();
-  NS_ADDREF(proxyRequest);
+  nsRefPtr<imgRequestProxy> proxyRequest = new imgRequestProxy();
 
   /* It is important to call |SetLoadFlags()| before calling |Init()| because
      |Init()| adds the request to the loadgroup.
@@ -720,12 +719,11 @@ nsresult imgLoader::CreateNewProxyForRequest(imgRequest *aRequest, nsILoadGroup 
   // init adds itself to imgRequest's list of observers
   nsresult rv = proxyRequest->Init(aRequest, aLoadGroup, uri, aObserver);
   if (NS_FAILED(rv)) {
-    NS_RELEASE(proxyRequest);
     return rv;
   }
 
   // transfer reference to caller
-  *_retval = proxyRequest;
+  proxyRequest.forget(_retval);
 
   return NS_OK;
 }
