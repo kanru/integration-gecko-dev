@@ -135,6 +135,7 @@ namespace image {
 
 class Decoder;
 class FrameAnimator;
+class ImageSource;
 
 class RasterImage : public ImageResource
                   , public nsIProperties
@@ -672,7 +673,7 @@ private: // data
   // BEGIN LOCKED MEMBER VARIABLES
   mozilla::ReentrantMonitor  mDecodingMonitor;
 
-  FallibleTArray<char>       mSourceData;
+  nsAutoPtr<ImageSource>     mSourceData;
 
   // Decoder and friends
   nsRefPtr<Decoder>          mDecoder;

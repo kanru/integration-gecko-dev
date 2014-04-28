@@ -8,6 +8,7 @@
 
 #include "RasterImage.h"
 
+#include "ImageSource.h"
 #include "base/histogram.h"
 #include "gfxPlatform.h"
 #include "nsComponentManagerUtils.h"
@@ -421,6 +422,7 @@ RasterImage::RasterImage(imgStatusTracker* aStatusTracker,
   mScaleRequest(nullptr)
 {
   mStatusTrackerInit = new imgStatusTrackerInit(this, aStatusTracker);
+  mSourceData = new FallibleImageSource();
 
   // Set up the discard tracker node.
   mDiscardTrackerNode.img = this;
@@ -436,7 +438,7 @@ RasterImage::~RasterImage()
   // Discardable statistics
   if (mDiscardable) {
     num_discardable_containers--;
-    discardable_source_bytes -= mSourceData.Length();
+    discardable_source_bytes -= mSourceData->Bytes();
 
     PR_LOG (GetCompressedImageAccountingLog(), PR_LOG_DEBUG,
             ("CompressedImageAccounting: destroying RasterImage %p.  "
@@ -472,7 +474,7 @@ RasterImage::~RasterImage()
 
   // Total statistics
   num_containers--;
-  total_source_bytes -= mSourceData.Length();
+  total_source_bytes -= mSourceData->Bytes();
 
   if (NS_IsMainThread()) {
     DiscardTracker::Remove(&mDiscardTrackerNode);
@@ -519,7 +521,7 @@ RasterImage::Init(const char* aMimeType,
   // Statistics
   if (mDiscardable) {
     num_discardable_containers++;
-    discardable_source_bytes += mSourceData.Length();
+    discardable_source_bytes += mSourceData->Bytes();
   }
 
   // Instantiate the decoder
@@ -1080,9 +1082,9 @@ RasterImage::HeapSizeOfSourceWithComputedFallback(MallocSizeOf aMallocSizeOf) co
   // - This is a zero-length image.
   // - We're on a platform where moz_malloc_size_of always returns 0.
   // In either case the fallback works appropriately.
-  size_t n = mSourceData.SizeOfExcludingThis(aMallocSizeOf);
+  size_t n = mSourceData->SizeOfExcludingThis(aMallocSizeOf);
   if (n == 0) {
-    n = mSourceData.Length();
+    n = mSourceData->Bytes();
   }
   return n;
 }
@@ -1678,7 +1680,7 @@ RasterImage::AddSourceData(const char *aBuffer, uint32_t aCount)
   else {
 
     // Store the data
-    char *newElem = mSourceData.AppendElements(aBuffer, aCount);
+    char *newElem = mSourceData->AppendSourceData(aBuffer, aCount);
     if (!newElem)
       return NS_ERROR_OUT_OF_MEMORY;
 
@@ -1763,21 +1765,21 @@ RasterImage::DoImageDataComplete()
     }
 
     // Free up any extra space in the backing buffer
-    mSourceData.Compact();
+    mSourceData->Compact();
   }
 
   // Log header information
   if (PR_LOG_TEST(GetCompressedImageAccountingLog(), PR_LOG_DEBUG)) {
     char buf[9];
-    get_header_str(buf, mSourceData.Elements(), mSourceData.Length());
+    get_header_str(buf, mSourceData->Addr(), mSourceData->Bytes());
     PR_LOG (GetCompressedImageAccountingLog(), PR_LOG_DEBUG,
             ("CompressedImageAccounting: RasterImage::SourceDataComplete() - data "
              "is done for container %p (%s) - header %p is 0x%s (length %d)",
              this,
              mSourceDataMimeType.get(),
-             mSourceData.Elements(),
+             mSourceData->Addr(),
              buf,
-             mSourceData.Length()));
+             mSourceData->Bytes()));
   }
 
   // We now have one of the qualifications for discarding. Re-evaluate.
@@ -1886,7 +1888,7 @@ nsresult
 RasterImage::SetSourceSizeHint(uint32_t sizeHint)
 {
   if (sizeHint && StoringSourceData())
-    return mSourceData.SetCapacity(sizeHint) ? NS_OK : NS_ERROR_OUT_OF_MEMORY;
+    return mSourceData->SetCapacity(sizeHint) ? NS_OK : NS_ERROR_OUT_OF_MEMORY;
   return NS_OK;
 }
 
@@ -2201,7 +2203,7 @@ RasterImage::ShutdownDecoder(eShutdownIntent aIntent)
   // If we finished a full decode, and we're not meant to be storing source
   // data, stop storing it.
   if (!wasSizeDecode && !StoringSourceData()) {
-    mSourceData.Clear();
+    mSourceData->Clear();
   }
 
   mBytesDecoded = 0;
@@ -2335,9 +2337,9 @@ RasterImage::RequestDecodeCore(RequestDecodeType aDecodeType)
   ReentrantMonitorAutoEnter lock(mDecodingMonitor);
 
   // If we don't have any bytes to flush to the decoder, we can't do anything.
-  // mBytesDecoded can be bigger than mSourceData.Length() if we're not storing
+  // mBytesDecoded can be bigger than mSourceData->Bytes() if we're not storing
   // the source data.
-  if (mBytesDecoded > mSourceData.Length())
+  if (mBytesDecoded > mSourceData->Bytes())
     return NS_OK;
 
   // If the image is waiting for decode work to be notified, go ahead and do that.
@@ -2381,7 +2383,7 @@ RasterImage::RequestDecodeCore(RequestDecodeType aDecodeType)
   }
 
   // If we've read all the data we have, we're done
-  if (mHasSourceData && mBytesDecoded == mSourceData.Length())
+  if (mHasSourceData && mBytesDecoded == mSourceData->Bytes())
     return NS_OK;
 
   // If we can do decoding now, do so.  Small images will decode completely,
@@ -2446,9 +2448,9 @@ RasterImage::SyncDecode()
     return NS_OK;
 
   // If we don't have any bytes to flush to the decoder, we can't do anything.
-  // mBytesDecoded can be bigger than mSourceData.Length() if we're not storing
+  // mBytesDecoded can be bigger than mSourceData->Bytes() if we're not storing
   // the source data.
-  if (mBytesDecoded > mSourceData.Length())
+  if (mBytesDecoded > mSourceData->Bytes())
     return NS_OK;
 
   // If we have a decoder open with different flags than what we need, shut it
@@ -2481,7 +2483,7 @@ RasterImage::SyncDecode()
   }
 
   // Write everything we have
-  rv = DecodeSomeData(mSourceData.Length() - mBytesDecoded, DECODE_SYNC);
+  rv = DecodeSomeData(mSourceData->Bytes() - mBytesDecoded, DECODE_SYNC);
   CONTAINER_ENSURE_SUCCESS(rv);
 
   // When we're doing a sync decode, we want to get as much information from the
@@ -2876,15 +2878,15 @@ RasterImage::DecodeSomeData(uint32_t aMaxBytes, DecodeStrategy aStrategy)
   }
 
   // If we have nothing else to decode, return
-  if (mBytesDecoded == mSourceData.Length())
+  if (mBytesDecoded == mSourceData->Bytes())
     return NS_OK;
 
-  MOZ_ASSERT(mBytesDecoded < mSourceData.Length());
+  MOZ_ASSERT(mBytesDecoded < mSourceData->Bytes());
 
   // write the proper amount of data
   uint32_t bytesToDecode = std::min(aMaxBytes,
-                                    mSourceData.Length() - mBytesDecoded);
-  nsresult rv = WriteToDecoder(mSourceData.Elements() + mBytesDecoded,
+                                    mSourceData->Bytes() - mBytesDecoded);
+  nsresult rv = WriteToDecoder(mSourceData->Addr() + mBytesDecoded,
                                bytesToDecode,
                                aStrategy);
 
@@ -2925,7 +2927,7 @@ RasterImage::IsDecodeFinished()
   // (NB - This can be the case even for non-erroneous images because
   // Decoder::GetDecodeDone() might not return true until after we call
   // Decoder::Finish() in ShutdownDecoder())
-  if (mHasSourceData && (mBytesDecoded == mSourceData.Length())) {
+  if (mHasSourceData && (mBytesDecoded == mSourceData->Bytes())) {
     return true;
   }
 
@@ -3288,7 +3290,8 @@ RasterImage::DecodePool::RequestDecode(RasterImage* aImg)
   if (!aImg->mDecoder->NeedsNewFrame()) {
     // No matter whether this is currently being decoded, we need to update the
     // number of bytes we want it to decode.
-    aImg->mDecodeRequest->mBytesToDecode = aImg->mSourceData.Length() - aImg->mBytesDecoded;
+    aImg->mDecodeRequest->mBytesToDecode =
+      aImg->mSourceData->Bytes() - aImg->mBytesDecoded;
 
     if (aImg->mDecodeRequest->mRequestStatus == DecodeRequest::REQUEST_PENDING ||
         aImg->mDecodeRequest->mRequestStatus == DecodeRequest::REQUEST_ACTIVE) {
@@ -3336,7 +3339,7 @@ RasterImage::DecodePool::DecodeABitOf(RasterImage* aImg, DecodeStrategy aStrateg
     if (aImg->mDecoder &&
         !aImg->mError &&
         !aImg->IsDecodeFinished() &&
-        aImg->mSourceData.Length() > aImg->mBytesDecoded) {
+        aImg->mSourceData->Bytes() > aImg->mBytesDecoded) {
       RequestDecode(aImg);
     }
   }
@@ -3498,7 +3501,7 @@ RasterImage::DecodePool::DecodeSomeOfImage(RasterImage* aImg,
   if (aImg->mDecoder->IsSizeDecode()) {
     // Decode all available data if we're a size decode; they're cheap, and we
     // want them to be more or less synchronous.
-    maxBytes = aImg->mSourceData.Length();
+    maxBytes = aImg->mSourceData->Bytes();
   } else {
     // We're only guaranteed to decode this many bytes, so in particular,
     // gDecodeBytesAtATime should be set high enough for us to read the size
@@ -3507,7 +3510,7 @@ RasterImage::DecodePool::DecodeSomeOfImage(RasterImage* aImg,
   }
 
   if (bytesToDecode == 0) {
-    bytesToDecode = aImg->mSourceData.Length() - aImg->mBytesDecoded;
+    bytesToDecode = aImg->mSourceData->Bytes() - aImg->mBytesDecoded;
   }
 
   int32_t chunkCount = 0;
@@ -3521,7 +3524,7 @@ RasterImage::DecodePool::DecodeSomeOfImage(RasterImage* aImg,
   //  * we run out of time.
   // We also try to decode at least one "chunk" if we've allocated a new frame,
   // even if we have no more data to send to the decoder.
-  while ((aImg->mSourceData.Length() > aImg->mBytesDecoded &&
+  while ((aImg->mSourceData->Bytes() > aImg->mBytesDecoded &&
           bytesToDecode > 0 &&
           !aImg->IsDecodeFinished() &&
           !(aDecodeType == DECODE_TYPE_UNTIL_SIZE && aImg->mHasSize) &&
