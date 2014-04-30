@@ -422,7 +422,7 @@ RasterImage::RasterImage(imgStatusTracker* aStatusTracker,
   mScaleRequest(nullptr)
 {
   mStatusTrackerInit = new imgStatusTrackerInit(this, aStatusTracker);
-  mSourceData = new FallibleImageSource();
+  mSourceData = new VolatileImageSource();
 
   // Set up the discard tracker node.
   mDiscardTrackerNode.img = this;
@@ -1771,6 +1771,7 @@ RasterImage::DoImageDataComplete()
   // Log header information
   if (PR_LOG_TEST(GetCompressedImageAccountingLog(), PR_LOG_DEBUG)) {
     char buf[9];
+    AutoImageSourceLocker imgLock(mSourceData);
     get_header_str(buf, mSourceData->Addr(), mSourceData->Bytes());
     PR_LOG (GetCompressedImageAccountingLog(), PR_LOG_DEBUG,
             ("CompressedImageAccounting: RasterImage::SourceDataComplete() - data "
@@ -2886,6 +2887,7 @@ RasterImage::DecodeSomeData(uint32_t aMaxBytes, DecodeStrategy aStrategy)
   // write the proper amount of data
   uint32_t bytesToDecode = std::min(aMaxBytes,
                                     mSourceData->Bytes() - mBytesDecoded);
+  AutoImageSourceLocker imgLock(mSourceData);
   nsresult rv = WriteToDecoder(mSourceData->Addr() + mBytesDecoded,
                                bytesToDecode,
                                aStrategy);

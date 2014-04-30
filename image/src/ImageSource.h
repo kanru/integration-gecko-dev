@@ -7,7 +7,12 @@
 #ifndef mozilla_imagelib_ImageSource_h_
 #define mozilla_imagelib_ImageSource_h_
 
+#include "mozilla/RefPtr.h"
+
 namespace mozilla {
+
+class VolatileBuffer;
+
 namespace image {
 
 class FallibleImageSource;
@@ -19,7 +24,11 @@ class VolatileImageSource;
 class ImageSource
 {
 public:
+  ImageSource() {}
   virtual ~ImageSource() {}
+
+  virtual bool LockImageSourceData() { return true; }
+  virtual bool UnlockImageSourceData() { return true; }
 
 public:
   /**
@@ -64,6 +73,11 @@ public:
 
 public:
   virtual size_t SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const = 0;
+
+private:
+  // disable copy ctor and assignment
+  ImageSource(const ImageSource&);    // not implemented
+  void operator=(const ImageSource&); // not implemented
 };
 
 class FallibleImageSource : public ImageSource
@@ -116,6 +130,64 @@ private:
 
 class VolatileImageSource : public ImageSource
 {
+public:
+  VolatileImageSource();
+  virtual ~VolatileImageSource() {}
+
+  virtual bool LockImageSourceData() MOZ_OVERRIDE;
+  virtual bool UnlockImageSourceData() MOZ_OVERRIDE;
+
+public:
+  virtual uint32_t Bytes() const MOZ_OVERRIDE;
+  virtual char *Addr() MOZ_OVERRIDE;
+
+public:
+  virtual bool SetCapacity(uint32_t aCapacity) MOZ_OVERRIDE;
+  virtual char
+  *AppendSourceData(const char *aBuffer, uint32_t aCount) MOZ_OVERRIDE;
+  virtual void Compact() MOZ_OVERRIDE;
+  virtual void Clear() MOZ_OVERRIDE;
+
+public:
+  virtual VolatileImageSource *AsVolatile() { return this; }
+
+public:
+  virtual size_t
+  SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const MOZ_OVERRIDE;
+
+private:
+  RefPtr<VolatileBuffer> mVBuf;
+  nsAutoPtr<VolatileBufferPtr<char> > mVBufPtr;
+  uint32_t mCapacity;
+  uint32_t mDataEnd;
+  int32_t mLockCount;
+};
+
+/**
+ * An RAII class to ensure it's easy to balance locks and unlocks on
+ * ImageSources.
+ */
+class AutoImageSourceLocker
+{
+public:
+  AutoImageSourceLocker(ImageSource *aImgSrc)
+    : mImageSource(aImgSrc)
+    , mSucceeded(aImgSrc->LockImageSourceData())
+  {}
+
+  ~AutoImageSourceLocker()
+  {
+    if (mSucceeded) {
+      mImageSource->UnlockImageSourceData();
+    }
+  }
+
+  // Whether the lock request succeeded.
+  bool Succeeded() { return mSucceeded; }
+
+private:
+  ImageSource* mImageSource;
+  bool mSucceeded;
 };
 
 } // namespace image

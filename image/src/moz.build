@@ -25,6 +25,7 @@ UNIFIED_SOURCES += [
     'ImageFactory.cpp',
     'ImageMetadata.cpp',
     'ImageOps.cpp',
+    'ImageSource.cpp',
     'ImageWrapper.cpp',
     'imgFrame.cpp',
     'imgTools.cpp',
