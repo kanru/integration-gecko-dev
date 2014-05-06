@@ -12,6 +12,7 @@
 #include "nsIHttpChannel.h"
 #include "nsIFileChannel.h"
 #include "nsIFile.h"
+#include "nsIJARChannel.h"
 #include "nsMimeTypes.h"
 #include "nsIRequest.h"
 
@@ -158,7 +159,7 @@ ImageFactory::CreateAnonymousImage(const nsCString& aMimeType)
   return newImage.forget();
 }
 
-int32_t
+static int32_t
 SaturateToInt32(int64_t val)
 {
   if (val > INT_MAX)
@@ -169,7 +170,7 @@ SaturateToInt32(int64_t val)
   return static_cast<int32_t>(val);
 }
 
-uint32_t
+static uint32_t
 GetContentSize(nsIRequest* aRequest)
 {
   nsCOMPtr<nsIChannel> channel(do_QueryInterface(aRequest));
@@ -199,6 +200,23 @@ GetContentSize(nsIRequest* aRequest)
   return 0;
 }
 
+static bool
+IsChannelLocal(nsIRequest* aRequest)
+{
+  if (!aRequest) {
+    return false;
+  }
+  nsCOMPtr<nsIJARChannel> jarchannel = do_QueryInterface(aRequest);
+  if (jarchannel) {
+    return true;
+  }
+  nsCOMPtr<nsIFileChannel> filechannel = do_QueryInterface(aRequest);
+  if (filechannel) {
+    return true;
+  }
+  return false;
+}
+
 /* static */ already_AddRefed<Image>
 ImageFactory::CreateRasterImage(nsIRequest* aRequest,
                                 imgStatusTracker* aStatusTracker,
@@ -209,7 +227,9 @@ ImageFactory::CreateRasterImage(nsIRequest* aRequest,
 {
   nsresult rv;
 
-  nsRefPtr<RasterImage> newImage = new RasterImage(aStatusTracker, aURI);
+  nsRefPtr<RasterImage> newImage = new RasterImage(aStatusTracker,
+                                                   aURI,
+                                                   IsChannelLocal(aRequest));
 
   rv = newImage->Init(aMimeType.get(), aImageFlags);
   NS_ENSURE_SUCCESS(rv, BadImage(newImage));
@@ -217,6 +237,8 @@ ImageFactory::CreateRasterImage(nsIRequest* aRequest,
   newImage->SetInnerWindowID(aInnerWindowId);
 
   uint32_t len = GetContentSize(aRequest);
+  MOZ_ASSERT(!IsChannelLocal(aRequest) || len > 0,
+             "Length must greater then zero for a local channel");
 
   // Pass anything usable on so that the RasterImage can preallocate
   // its source buffer.

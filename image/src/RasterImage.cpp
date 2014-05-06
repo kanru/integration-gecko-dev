@@ -389,7 +389,8 @@ NS_IMPL_ISUPPORTS(RasterImage, imgIContainer, nsIProperties,
 
 //******************************************************************************
 RasterImage::RasterImage(imgStatusTracker* aStatusTracker,
-                         ImageURL* aURI /* = nullptr */) :
+                         ImageURL* aURI /* = nullptr */,
+                         bool aIsLocal) :
   ImageResource(aURI), // invoke superclass's constructor
   mSize(0,0),
   mFrameDecodeFlags(DECODE_FLAGS_DEFAULT),
@@ -407,6 +408,7 @@ RasterImage::RasterImage(imgStatusTracker* aStatusTracker,
   mInDecoder(false),
   mStatusDiff(ImageStatusDiff::NoChange()),
   mNotifying(false),
+  mIsLocal(aIsLocal),
   mHasSize(false),
   mDecodeOnDraw(false),
   mMultipart(false),
@@ -422,7 +424,11 @@ RasterImage::RasterImage(imgStatusTracker* aStatusTracker,
   mScaleRequest(nullptr)
 {
   mStatusTrackerInit = new imgStatusTrackerInit(this, aStatusTracker);
-  mSourceData = new VolatileImageSource();
+  if (mURI && mIsLocal && StoringSourceData()) {
+    mSourceData = new VolatileImageSource();
+  } else {
+    mSourceData = new FallibleImageSource();
+  }
 
   // Set up the discard tracker node.
   mDiscardTrackerNode.img = this;

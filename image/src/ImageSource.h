@@ -7,6 +7,8 @@
 #ifndef mozilla_imagelib_ImageSource_h_
 #define mozilla_imagelib_ImageSource_h_
 
+#include "nsTArray.h"
+#include "nsAutoPtr.h"
 #include "mozilla/RefPtr.h"
 
 namespace mozilla {
@@ -35,6 +37,10 @@ public:
    * @return The number of bytes in the image source
    */
   virtual uint32_t Bytes() const = 0;
+  /**
+   * @return The capacity of the image source container
+   */
+  virtual uint32_t Capacity() const = 0;
   /**
    * @return The memory address of the image source
    */
@@ -90,6 +96,10 @@ public:
   {
     return mSourceData.Length();
   }
+  virtual uint32_t Capacity() const MOZ_OVERRIDE
+  {
+    return mSourceData.Capacity();
+  }
   virtual char *Addr() MOZ_OVERRIDE
   {
     return mSourceData.Elements();
@@ -139,6 +149,7 @@ public:
 
 public:
   virtual uint32_t Bytes() const MOZ_OVERRIDE;
+  virtual uint32_t Capacity() const MOZ_OVERRIDE;
   virtual char *Addr() MOZ_OVERRIDE;
 
 public:
