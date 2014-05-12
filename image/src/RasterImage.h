@@ -476,6 +476,7 @@ private: // data
   bool                       mNotifying:1;
 
   // Boolean flags (clustered together to conserve space):
+  bool                       mIsLocal:1;
   bool                       mHasSize:1;       // Has SetSize() been called?
   bool                       mDecodeOnDraw:1;  // Decoding on draw?
   bool                       mMultipart:1;     // Multipart?
@@ -565,7 +566,8 @@ private: /* discarding */
 
 protected:
   RasterImage(imgStatusTracker* aStatusTracker = nullptr,
-              ImageURL* aURI = nullptr);
+              ImageURL* aURI = nullptr,
+              bool aIsLocal = false);
 
   bool ShouldAnimate();
 
