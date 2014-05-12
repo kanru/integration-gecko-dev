@@ -2237,20 +2237,23 @@ RasterImage::CanDiscard() {
   return (DiscardingEnabled() && // Globally enabled...
           mDiscardable &&        // ...Enabled at creation time...
           (mLockCount == 0) &&   // ...not temporarily disabled...
-          mHasSourceData &&      // ...have the source data...
+          (mHasSourceData ||     // ...have the source data...
+           mIsLocal) &&          // ...or source data could be read back...
           mDecoded);             // ...and have something to discard.
 }
 
 bool
 RasterImage::CanForciblyDiscard() {
   return mDiscardable &&         // ...Enabled at creation time...
-         mHasSourceData;         // ...have the source data...
+         (mHasSourceData ||      // ...have the source data...
+          mIsLocal);             // ...or source data could be read back.
 }
 
 bool
 RasterImage::CanForciblyDiscardAndRedecode() {
   return mDiscardable &&         // ...Enabled at creation time...
-         mHasSourceData &&       // ...have the source data...
+         (mHasSourceData ||      // ...have the source data...
+          mIsLocal) &&           // ...or source data could be read back...
          !mDecoder &&            // Can't discard with an open decoder
          !mAnim;                 // Can never discard animated images
 }
@@ -2266,9 +2269,8 @@ RasterImage::DiscardingActive() {
 // or just writing it directly to the decoder
 bool
 RasterImage::StoringSourceData() const {
-  return (mDecodeOnDraw || mDiscardable);
+  return (mDecodeOnDraw || mDiscardable) && !mIsLocal;
 }
-
 
 // Sets up a decoder for this image. It is an error to call this function
 // when decoding is already in process (ie - when mDecoder is non-null).
@@ -2437,6 +2439,7 @@ RasterImage::ShutdownDecoder(eShutdownIntent aIntent)
   // data, stop storing it.
   if (!wasSizeDecode && !StoringSourceData()) {
     mSourceData.Clear();
+    mHasSourceData = false;
   }
 
   mBytesDecoded = 0;
