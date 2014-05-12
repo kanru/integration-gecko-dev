@@ -424,11 +424,6 @@ RasterImage::RasterImage(imgStatusTracker* aStatusTracker,
   mScaleRequest(nullptr)
 {
   mStatusTrackerInit = new imgStatusTrackerInit(this, aStatusTracker);
-  if (mURI && mIsLocal && StoringSourceData()) {
-    mSourceData = new VolatileImageSource();
-  } else {
-    mSourceData = new FallibleImageSource();
-  }
 
   // Set up the discard tracker node.
   mDiscardTrackerNode.img = this;
@@ -523,6 +518,12 @@ RasterImage::Init(const char* aMimeType,
   mDiscardable = !!(aFlags & INIT_FLAG_DISCARDABLE);
   mDecodeOnDraw = !!(aFlags & INIT_FLAG_DECODE_ON_DRAW);
   mMultipart = !!(aFlags & INIT_FLAG_MULTIPART);
+
+  if (false && mURI && mIsLocal && StoringSourceData()) {
+    mSourceData = new VolatileImageSource();
+  } else {
+    mSourceData = new FallibleImageSource();
+  }
 
   // Statistics
   if (mDiscardable) {
@@ -2011,20 +2012,20 @@ RasterImage::CanDiscard() {
   return (DiscardingEnabled() && // Globally enabled...
           mDiscardable &&        // ...Enabled at creation time...
           (mLockCount == 0) &&   // ...not temporarily disabled...
-          mHasSourceData &&      // ...have the source data...
+          (mHasSourceData || mIsLocal) &&      // ...have the source data...
           mDecoded);             // ...and have something to discard.
 }
 
 bool
 RasterImage::CanForciblyDiscard() {
   return mDiscardable &&         // ...Enabled at creation time...
-         mHasSourceData;         // ...have the source data...
+    (mHasSourceData || mIsLocal);         // ...have the source data...
 }
 
 bool
 RasterImage::CanForciblyDiscardAndRedecode() {
   return mDiscardable &&         // ...Enabled at creation time...
-         mHasSourceData &&       // ...have the source data...
+    (mHasSourceData || mIsLocal) &&       // ...have the source data...
          !mDecoder &&            // Can't discard with an open decoder
          !mAnim;                 // Can never discard animated images
 }
@@ -2211,6 +2212,11 @@ RasterImage::ShutdownDecoder(eShutdownIntent aIntent)
   // data, stop storing it.
   if (!wasSizeDecode && !StoringSourceData()) {
     mSourceData->Clear();
+  }
+  // We could reload data from local file
+  if (!wasSizeDecode && mIsLocal) {
+    mSourceData->Clear();
+    mHasSourceData = false;
   }
 
   mBytesDecoded = 0;
