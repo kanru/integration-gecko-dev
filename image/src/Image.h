@@ -14,6 +14,7 @@
 
 class nsIRequest;
 class nsIInputStream;
+class imgRequest;
 
 namespace mozilla {
 namespace image {
@@ -178,6 +179,8 @@ public:
    */
   virtual ImageURL* GetURI() MOZ_OVERRIDE { return mURI.get(); }
 
+  virtual void DetachRequest() { mRequest = nullptr; }
+
 protected:
   ImageResource(ImageURL* aURI);
 
@@ -215,6 +218,7 @@ protected:
   virtual nsresult StopAnimation() = 0;
 
   // Member data shared by all implementations of this abstract class
+  imgRequest*                   mRequest;
   nsRefPtr<imgStatusTracker>    mStatusTracker;
   nsRefPtr<ImageURL>            mURI;
   TimeStamp                     mLastRefreshTime;

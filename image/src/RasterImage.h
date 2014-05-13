@@ -42,6 +42,7 @@
 class nsIInputStream;
 class nsIThreadPool;
 class nsIRequest;
+class imgRequest;
 
 #define NS_RASTERIMAGE_CID \
 { /* 376ff2c1-9bf6-418a-b143-3340c00112f7 */         \
@@ -565,7 +566,8 @@ private: /* discarding */
   friend class DiscardTracker;
 
 protected:
-  RasterImage(imgStatusTracker* aStatusTracker = nullptr,
+  RasterImage(imgRequest* aImgRequest = nullptr,
+              imgStatusTracker* aStatusTracker = nullptr,
               ImageURL* aURI = nullptr,
               bool aIsLocal = false);
 

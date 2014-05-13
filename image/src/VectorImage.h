@@ -11,6 +11,7 @@
 #include "mozilla/MemoryReporting.h"
 
 class nsIRequest;
+class imgRequest;
 class gfxDrawable;
 
 namespace mozilla {
@@ -79,7 +80,8 @@ public:
   void OnSVGDocumentError();
 
 protected:
-  VectorImage(imgStatusTracker* aStatusTracker = nullptr,
+  VectorImage(imgRequest* aImgRequest = nullptr,
+              imgStatusTracker* aStatusTracker = nullptr,
               ImageURL* aURI = nullptr);
 
   virtual nsresult StartAnimation();

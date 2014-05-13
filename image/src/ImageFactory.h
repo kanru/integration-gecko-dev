@@ -13,6 +13,7 @@
 class nsCString;
 class nsIRequest;
 class imgStatusTracker;
+class imgRequest;
 
 namespace mozilla {
 namespace image {
@@ -41,6 +42,7 @@ public:
    * Can be called on or off the main thread.
    *
    * @param aRequest       The associated request.
+   * @param aImgRequest    The associated image request.
    * @param aStatusTracker A status tracker for the image to use.
    * @param aMimeType      The mimetype of the image.
    * @param aURI           The URI of the image.
@@ -48,6 +50,7 @@ public:
    * @param aInnerWindowId The window this image belongs to.
    */
   static already_AddRefed<Image> CreateImage(nsIRequest* aRequest,
+                                             imgRequest* aImgRequest,
                                              imgStatusTracker* aStatusTracker,
                                              const nsCString& aMimeType,
                                              ImageURL* aURI,
@@ -64,6 +67,7 @@ public:
 private:
   // Factory functions that create specific types of image containers.
   static already_AddRefed<Image> CreateRasterImage(nsIRequest* aRequest,
+                                                   imgRequest* aImgRequest,
                                                    imgStatusTracker* aStatusTracker,
                                                    const nsCString& aMimeType,
                                                    ImageURL* aURI,
@@ -71,6 +75,7 @@ private:
                                                    uint32_t aInnerWindowId);
 
   static already_AddRefed<Image> CreateVectorImage(nsIRequest* aRequest,
+                                                   imgRequest* aImgRequest,
                                                    imgStatusTracker* aStatusTracker,
                                                    const nsCString& aMimeType,
                                                    ImageURL* aURI,

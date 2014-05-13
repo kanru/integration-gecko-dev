@@ -312,7 +312,8 @@ NS_IMPL_ISUPPORTS(VectorImage,
 //------------------------------------------------------------------------------
 // Constructor / Destructor
 
-VectorImage::VectorImage(imgStatusTracker* aStatusTracker,
+VectorImage::VectorImage(imgRequest* aImgRequest,
+                         imgStatusTracker* aStatusTracker,
                          ImageURL* aURI /* = nullptr */) :
   ImageResource(aURI), // invoke superclass's constructor
   mIsInitialized(false),
@@ -322,6 +323,7 @@ VectorImage::VectorImage(imgStatusTracker* aStatusTracker,
   mHasPendingInvalidation(false)
 {
   mStatusTrackerInit = new imgStatusTrackerInit(this, aStatusTracker);
+  mRequest = aImgRequest;
 }
 
 VectorImage::~VectorImage()

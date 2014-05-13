@@ -113,6 +113,7 @@ ImageFactory::CanRetargetOnDataAvailable(ImageURL* aURI, bool aIsMultiPart)
 
 /* static */ already_AddRefed<Image>
 ImageFactory::CreateImage(nsIRequest* aRequest,
+                          imgRequest* aImgRequest,
                           imgStatusTracker* aStatusTracker,
                           const nsCString& aMimeType,
                           ImageURL* aURI,
@@ -127,10 +128,10 @@ ImageFactory::CreateImage(nsIRequest* aRequest,
 
   // Select the type of image to create based on MIME type.
   if (aMimeType.EqualsLiteral(IMAGE_SVG_XML)) {
-    return CreateVectorImage(aRequest, aStatusTracker, aMimeType,
+    return CreateVectorImage(aRequest, aImgRequest, aStatusTracker, aMimeType,
                              aURI, imageFlags, aInnerWindowId);
   } else {
-    return CreateRasterImage(aRequest, aStatusTracker, aMimeType,
+    return CreateRasterImage(aRequest, aImgRequest, aStatusTracker, aMimeType,
                              aURI, imageFlags, aInnerWindowId);
   }
 }
@@ -219,6 +220,7 @@ IsChannelLocal(nsIRequest* aRequest)
 
 /* static */ already_AddRefed<Image>
 ImageFactory::CreateRasterImage(nsIRequest* aRequest,
+                                imgRequest* aImgRequest,
                                 imgStatusTracker* aStatusTracker,
                                 const nsCString& aMimeType,
                                 ImageURL* aURI,
@@ -227,7 +229,8 @@ ImageFactory::CreateRasterImage(nsIRequest* aRequest,
 {
   nsresult rv;
 
-  nsRefPtr<RasterImage> newImage = new RasterImage(aStatusTracker,
+  nsRefPtr<RasterImage> newImage = new RasterImage(aImgRequest,
+                                                   aStatusTracker,
                                                    aURI,
                                                    IsChannelLocal(aRequest));
 
@@ -284,6 +287,7 @@ ImageFactory::CreateRasterImage(nsIRequest* aRequest,
 
 /* static */ already_AddRefed<Image>
 ImageFactory::CreateVectorImage(nsIRequest* aRequest,
+                                imgRequest* aImgRequest,
                                 imgStatusTracker* aStatusTracker,
                                 const nsCString& aMimeType,
                                 ImageURL* aURI,
@@ -292,7 +296,7 @@ ImageFactory::CreateVectorImage(nsIRequest* aRequest,
 {
   nsresult rv;
 
-  nsRefPtr<VectorImage> newImage = new VectorImage(aStatusTracker, aURI);
+  nsRefPtr<VectorImage> newImage = new VectorImage(aImgRequest, aStatusTracker, aURI);
 
   rv = newImage->Init(aMimeType.get(), aImageFlags);
   NS_ENSURE_SUCCESS(rv, BadImage(newImage));

@@ -609,7 +609,8 @@ NS_IMPL_ISUPPORTS(RasterImage, imgIContainer, nsIProperties,
 #endif
 
 //******************************************************************************
-RasterImage::RasterImage(imgStatusTracker* aStatusTracker,
+RasterImage::RasterImage(imgRequest* aImgRequest,
+                         imgStatusTracker* aStatusTracker,
                          ImageURL* aURI /* = nullptr */,
                          bool aIsLocal) :
   ImageResource(aURI), // invoke superclass's constructor
@@ -645,6 +646,7 @@ RasterImage::RasterImage(imgStatusTracker* aStatusTracker,
   mScaleRequest(nullptr)
 {
   mStatusTrackerInit = new imgStatusTrackerInit(this, aStatusTracker);
+  mRequest = aImgRequest;
 
   // Set up the discard tracker node.
   mDiscardTrackerNode.img = this;
@@ -2509,6 +2511,12 @@ RasterImage::StartDecoding()
     return NS_DispatchToMainThread(
       NS_NewRunnableMethod(this, &RasterImage::StartDecoding));
   }
+  if (mHasBeenDecoded && !mDecoded && !mHasSourceData && mIsLocal) {
+    if (mRequest) {
+      //mRequest->ReDownloadData();
+      printf_stderr("@@@@@@@@@@@@@@@@@ FIXME ReDownloadData\n");
+    }
+  }
   // Here we are explicitly trading off flashing for responsiveness in the case
   // that we're redecoding an image (see bug 845147).
   return RequestDecodeCore(mHasBeenDecoded ?
@@ -2978,7 +2986,7 @@ RasterImage::Draw(gfxContext *aContext,
   }
 
   // We use !mDecoded && mHasSourceData to mean discarded.
-  if (!mDecoded && mHasSourceData) {
+  if (!mDecoded && (mHasSourceData || mIsLocal)) {
     mDrawStartTime = TimeStamp::Now();
   }
 
