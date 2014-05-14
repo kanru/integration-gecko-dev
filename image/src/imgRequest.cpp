@@ -72,6 +72,9 @@ imgRequest::imgRequest(imgLoader* aLoader)
 
 imgRequest::~imgRequest()
 {
+  if (mImage) {
+    mImage->Detach();
+  }
   if (mURI) {
     nsAutoCString spec;
     mURI->GetSpec(spec);
@@ -93,7 +96,7 @@ nsresult imgRequest::Init(nsIURI *aURI,
 
   LOG_FUNC(GetImgLog(), "imgRequest::Init");
 
-  NS_ABORT_IF_FALSE(!mImage, "Multiple calls to init");
+  // NS_ABORT_IF_FALSE(!mImage, "Multiple calls to init");
   NS_ABORT_IF_FALSE(aURI, "No uri");
   NS_ABORT_IF_FALSE(aCurrentURI, "No current uri");
   NS_ABORT_IF_FALSE(aRequest, "No request");
@@ -128,7 +131,7 @@ nsresult imgRequest::Init(nsIURI *aURI,
 already_AddRefed<imgStatusTracker>
 imgRequest::GetStatusTracker()
 {
-  if (mImage && mGotData) {
+  if (mImage) {
     NS_ABORT_IF_FALSE(!mStatusTracker,
                       "Should have given mStatusTracker to mImage");
     return mImage->GetStatusTracker();
@@ -312,6 +315,36 @@ nsresult imgRequest::GetURI(ImageURL **aURI)
   }
 
   return NS_ERROR_FAILURE;
+}
+
+void imgRequest::DownloadAgain()
+{
+  nsresult rv;
+  nsCOMPtr<nsIChannel> newChannel;
+  nsCOMPtr<nsIURI> uri = mURI->ToIURI();
+
+  rv = NS_NewChannel(getter_AddRefs(newChannel),
+                     uri,
+                     nullptr, /* Cached IOService */
+                     nullptr, /* LoadGroup */
+                     nullptr, /* Notification Callbacks */
+                     nsIRequest::LOAD_NORMAL,
+                     nullptr  /* Policy */);
+  if (NS_FAILED(rv)) {
+    return;
+  }
+  //nsCOMPtr<nsILoadGroup> channelLoadGroup;
+  //newChannel->GetLoadGroup(getter_AddRefs(channelLoadGroup));
+  mGotData = false;
+  mResniffMimeType = false;
+  this->Init(uri, uri, newChannel, newChannel, mCacheEntry,
+             mLoadId, mLoadingPrincipal, mCORSMode);
+  nsCOMPtr<nsIStreamListener> listener = new ProxyListener(this);
+  rv = newChannel->AsyncOpen(listener, nullptr);
+  if (NS_FAILED(rv)) {
+    this->CancelAndAbort(rv);
+    return;
+  }
 }
 
 nsresult imgRequest::GetSecurityInfo(nsISupports **aSecurityInfo)
@@ -558,9 +591,9 @@ NS_IMETHODIMP imgRequest::OnStartRequest(nsIRequest *aRequest, nsISupports *ctxt
     statusTracker->SetIsMultipart();
   }
 
-  // If we're not multipart, we shouldn't have an image yet
-  NS_ABORT_IF_FALSE(mIsMultiPartChannel || !mImage,
-                    "Already have an image for non-multipart request");
+  // // If we're not multipart, we shouldn't have an image yet
+  // NS_ABORT_IF_FALSE(mIsMultiPartChannel || !mImage,
+  //                   "Already have an image for non-multipart request");
 
   // If we're multipart and about to load another image, signal so we can
   // detect the mime type in OnDataAvailable.
@@ -810,9 +843,12 @@ imgRequest::OnDataAvailable(nsIRequest *aRequest, nsISupports *ctxt,
 
       // Now we can create a new image to hold the data. If we don't have a decoder
       // for this mimetype we'll find out about it here.
-      mImage = ImageFactory::CreateImage(aRequest, this, mStatusTracker, mContentType,
-                                         mURI, mIsMultiPartChannel,
-                                         static_cast<uint32_t>(mInnerWindowId));
+      if (!mImage) {
+        mImage = ImageFactory::CreateImage(aRequest, this, mStatusTracker,
+                                           mContentType, mURI,
+                                           mIsMultiPartChannel,
+                                           static_cast<uint32_t>(mInnerWindowId));
+      }
 
       // Release our copy of the status tracker since the image owns it now.
       mStatusTracker = nullptr;

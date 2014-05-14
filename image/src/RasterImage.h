@@ -477,6 +477,7 @@ private: // data
   bool                       mNotifying:1;
 
   // Boolean flags (clustered together to conserve space):
+  bool                       mWaitingData:1;
   bool                       mIsLocal:1;
   bool                       mHasSize:1;       // Has SetSize() been called?
   bool                       mDecodeOnDraw:1;  // Decoding on draw?

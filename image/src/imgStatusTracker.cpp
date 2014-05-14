@@ -43,7 +43,7 @@ public:
     nsRefPtr<imgStatusTracker> tracker = mTracker.get();
     if (!tracker) { return; }
     tracker->RecordStartDecode();
-    if (!tracker->IsMultipart()) {
+    if (!tracker->IsMultipart() && !tracker->IsDownloadAgain()) {
       tracker->RecordBlockOnload();
     }
   }
@@ -782,6 +782,22 @@ imgStatusTracker::SendImageIsAnimated(imgRequestProxy* aProxy)
   MOZ_ASSERT(NS_IsMainThread());
   if (!aProxy->NotificationsDeferred())
     aProxy->OnImageIsAnimated();
+}
+
+void
+imgStatusTracker::RecordDownloadAgain()
+{
+  NS_ABORT_IF_FALSE(mImage,
+                    "RecordDownloadAgain called before we have an Image");
+  mState |= stateDownloadAgain;
+}
+
+void
+imgStatusTracker::SendDownloadAgain(imgRequestProxy* aProxy)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  if (!aProxy->NotificationsDeferred())
+    aProxy->OnDownloadAgain();
 }
 
 void

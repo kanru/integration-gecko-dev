@@ -152,6 +152,7 @@ protected:
   void OnDiscard         ();
   void OnUnlockedDraw    ();
   void OnImageIsAnimated ();
+  void OnDownloadAgain   ();
 
   /* non-virtual sort-of-nsIRequestObserver methods */
   void OnStartRequest();

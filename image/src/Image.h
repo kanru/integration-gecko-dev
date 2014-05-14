@@ -142,6 +142,8 @@ public:
   virtual void SetHasError() = 0;
 
   virtual ImageURL* GetURI() = 0;
+
+  virtual void Detach() = 0;
 };
 
 class ImageResource : public Image
@@ -179,7 +181,7 @@ public:
    */
   virtual ImageURL* GetURI() MOZ_OVERRIDE { return mURI.get(); }
 
-  virtual void DetachRequest() { mRequest = nullptr; }
+  virtual void Detach() MOZ_OVERRIDE { mRequest = nullptr; }
 
 protected:
   ImageResource(ImageURL* aURI);

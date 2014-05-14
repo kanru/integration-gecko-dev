@@ -809,6 +809,16 @@ void imgRequestProxy::OnImageIsAnimated()
   }
 }
 
+void imgRequestProxy::OnDownloadAgain()
+{
+  LOG_FUNC(GetImgLog(), "imgRequestProxy::OnDownloadAgain");
+  if (mListener && !mCanceled) {
+    // Hold a ref to the listener while we call it, just in case.
+    nsCOMPtr<imgINotificationObserver> kungFuDeathGrip(mListener);
+    mListener->Notify(this, imgINotificationObserver::DOWNLOAD_AGAIN, nullptr);
+  }
+}
+
 void imgRequestProxy::OnStartRequest()
 {
 #ifdef PR_LOGGING

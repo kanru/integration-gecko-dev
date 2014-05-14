@@ -630,6 +630,7 @@ RasterImage::RasterImage(imgRequest* aImgRequest,
   mInDecoder(false),
   mStatusDiff(ImageStatusDiff::NoChange()),
   mNotifying(false),
+  mWaitingData(true),
   mIsLocal(aIsLocal),
   mHasSize(false),
   mDecodeOnDraw(false),
@@ -752,9 +753,10 @@ RasterImage::Init(const char* aMimeType,
   nsresult rv = InitDecoder(/* aDoSizeDecode = */ true);
   CONTAINER_ENSURE_SUCCESS(rv);
 
-  // If we aren't storing source data, we want to switch from a size decode to
-  // a full decode as soon as possible.
-  if (!StoringSourceData()) {
+  // If we aren't storing source data, we want to switch from a size
+  // decode to a full decode as soon as possible. However if the
+  // source data is from a local file we could do it later.
+  if (!StoringSourceData() && !mIsLocal) {
     mWantFullDecode = true;
   }
 
@@ -1966,6 +1968,7 @@ RasterImage::DoImageDataComplete()
   if (mHasSourceData)
     return NS_OK;
   mHasSourceData = true;
+  mWaitingData = false;
 
   // If there's a decoder open, synchronously decode the beginning of the image
   // to check for errors and get the image's size.  (If we already have the
@@ -2511,10 +2514,16 @@ RasterImage::StartDecoding()
     return NS_DispatchToMainThread(
       NS_NewRunnableMethod(this, &RasterImage::StartDecoding));
   }
-  if (mHasBeenDecoded && !mDecoded && !mHasSourceData && mIsLocal) {
+  // FIXME: insane conditions
+  if (!mDecoded && !mHasSourceData && mHasSize && mIsLocal && !mWaitingData) {
     if (mRequest) {
-      //mRequest->ReDownloadData();
-      printf_stderr("@@@@@@@@@@@@@@@@@ FIXME ReDownloadData\n");
+      if (!mDecoder) {
+        nsresult rv = InitDecoder(/* aDoSizeDecode = */ false);
+        CONTAINER_ENSURE_SUCCESS(rv);
+      }
+      mStatusTracker->RecordDownloadAgain();
+      mRequest->DownloadAgain();
+      mWaitingData = true;
     }
   }
   // Here we are explicitly trading off flashing for responsiveness in the case
@@ -2622,8 +2631,6 @@ RasterImage::RequestDecodeCore(RequestDecodeType aDecodeType)
 
     rv = FinishedSomeDecoding();
     CONTAINER_ENSURE_SUCCESS(rv);
-
-    MOZ_ASSERT(mDecoder);
   }
 
   // If we've read all the data we have, we're done

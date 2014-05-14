@@ -148,6 +148,12 @@ ImageWrapper::GetURI()
   return mInnerImage->GetURI();
 }
 
+void
+ImageWrapper::Detach()
+{
+  mInnerImage->Detach();
+}
+
 // Methods inherited from XPCOM interfaces.
 
 NS_IMPL_ISUPPORTS(ImageWrapper, imgIContainer)

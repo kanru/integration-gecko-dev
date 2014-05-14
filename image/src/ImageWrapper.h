@@ -64,6 +64,8 @@ public:
 
   virtual ImageURL* GetURI() MOZ_OVERRIDE;
 
+  virtual void Detach() MOZ_OVERRIDE;
+
 protected:
   ImageWrapper(Image* aInnerImage)
     : mInnerImage(aInnerImage)

@@ -88,7 +88,8 @@ enum {
   stateFrameStopped      = 1u << 4,
   stateRequestStopped    = 1u << 5,
   stateBlockingOnload    = 1u << 6,
-  stateImageIsAnimated   = 1u << 7
+  stateImageIsAnimated   = 1u << 7,
+  stateDownloadAgain     = 1u << 8
 };
 
 } // namespace image
@@ -225,6 +226,8 @@ public:
   void SendUnlockedDraw(imgRequestProxy* aProxy);
   void RecordImageIsAnimated();
   void SendImageIsAnimated(imgRequestProxy *aProxy);
+  void RecordDownloadAgain();
+  void SendDownloadAgain(imgRequestProxy *aProxy);
 
   /* non-virtual sort-of-nsIRequestObserver methods */
   // Functions with prefix Send- are main thread only, since they contain calls
@@ -263,8 +266,9 @@ public:
   void RecordError();
 
   bool IsMultipart() const { return mIsMultipart; }
+  bool IsDownloadAgain() const { return mState & mozilla::image::stateDownloadAgain; }
 
-  // Weak pointer getters - no AddRefs.
+  // weak pointer getters - no AddRefs.
   inline already_AddRefed<mozilla::image::Image> GetImage() const {
     nsRefPtr<mozilla::image::Image> image = mImage;
     return image.forget();
