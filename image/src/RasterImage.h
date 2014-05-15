@@ -432,14 +432,8 @@ private: // data
   // we maybe decoding on draw).
   FrameAnimator* mAnim;
 
-  // Discard members
-  uint32_t                   mLockCount;
-  DiscardTracker::Node       mDiscardTrackerNode;
-
   // Source data members
   nsCString                  mSourceDataMimeType;
-
-  friend class DiscardTracker;
 
   // How many times we've decoded this image.
   // This is currently only used for statistics
@@ -553,12 +547,21 @@ private: // data
   // Error handling.
   void DoError();
 
+
+private: /* discarding */
+
+  // Discard members
+  uint32_t                   mLockCount;
+  DiscardTracker::Node       mDiscardTrackerNode;
+
   // Helpers
   bool CanDiscard();
   bool CanForciblyDiscard();
   bool CanForciblyDiscardAndRedecode();
   bool DiscardingActive();
   bool StoringSourceData() const;
+
+  friend class DiscardTracker;
 
 protected:
   RasterImage(imgStatusTracker* aStatusTracker = nullptr,
