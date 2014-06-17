@@ -814,10 +814,24 @@ ContentParent::RunAfterPreallocatedProcessReady(nsIRunnable* aRequest)
 #endif
 }
 
-typedef std::map<ContentParent*, std::set<ContentParent*> > GrandchildMap;
-static GrandchildMap sGrandchildProcessMap;
+namespace {
+std::map<ContentParent*, std::set<ContentParent*> >&
+GrandchildProcessMap()
+{
+    MOZ_ASSERT(NS_IsMainThread());
+    static std::map<ContentParent*, std::set<ContentParent*> >
+        sGrandchildProcessMap;
+    return sGrandchildProcessMap;
+}
 
-std::map<uint64_t, ContentParent*> sContentParentMap;
+std::map<uint64_t, ContentParent*>&
+ContentParentMap()
+{
+    MOZ_ASSERT(NS_IsMainThread());
+    static std::map<uint64_t, ContentParent*> sContentParentMap;
+    return sContentParentMap;
+}
+} // anonymous namespace
 
 bool
 ContentParent::RecvCreateChildProcess(const IPCTabContext& aContext,
@@ -859,12 +873,12 @@ ContentParent::RecvCreateChildProcess(const IPCTabContext& aContext,
     *aId = cp->ChildID();
     *aIsForApp = cp->IsForApp();
     *aIsForBrowser = cp->IsForBrowser();
-    sContentParentMap[*aId] = cp;
-    auto iter = sGrandchildProcessMap.find(this);
-    if (iter == sGrandchildProcessMap.end()) {
+    ContentParentMap()[*aId] = cp;
+    auto iter = GrandchildProcessMap().find(this);
+    if (iter == GrandchildProcessMap().end()) {
         std::set<ContentParent*> children;
         children.insert(cp);
-        sGrandchildProcessMap[this] = children;
+        GrandchildProcessMap()[this] = children;
     } else {
         iter->second.insert(cp);
     }
@@ -874,9 +888,9 @@ ContentParent::RecvCreateChildProcess(const IPCTabContext& aContext,
 bool
 ContentParent::AnswerBridgeToChildProcess(const uint64_t& id)
 {
-    ContentParent* cp = sContentParentMap[id];
-    auto iter = sGrandchildProcessMap.find(this);
-    if (iter != sGrandchildProcessMap.end() &&
+    ContentParent* cp = ContentParentMap()[id];
+    auto iter = GrandchildProcessMap().find(this);
+    if (iter != GrandchildProcessMap().end() &&
         iter->second.find(cp) != iter->second.end()) {
         return PContentBridge::Bridge(this, cp);
     } else {
@@ -1435,9 +1449,9 @@ ContentParent::MarkAsDead()
 
     mIsAlive = false;
 
-    sGrandchildProcessMap.erase(this);
-    for (auto iter = sGrandchildProcessMap.begin();
-         iter != sGrandchildProcessMap.end();
+    GrandchildProcessMap().erase(this);
+    for (auto iter = GrandchildProcessMap().begin();
+         iter != GrandchildProcessMap().end();
          iter++) {
         iter->second.erase(this);
     }
@@ -1678,8 +1692,8 @@ ContentParent::ActorDestroy(ActorDestroyReason why)
     NS_DispatchToCurrentThread(new DelayedDeleteContentParentTask(this));
 
     // Destroy any processes created by this ContentParent
-    auto iter = sGrandchildProcessMap.find(this);
-    if (iter != sGrandchildProcessMap.end()) {
+    auto iter = GrandchildProcessMap().find(this);
+    if (iter != GrandchildProcessMap().end()) {
         for(auto child = iter->second.begin();
             child != iter->second.end();
             child++) {
