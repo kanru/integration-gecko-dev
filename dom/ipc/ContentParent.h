@@ -187,6 +187,11 @@ public:
 
     int32_t Pid();
 
+    /**
+     * See the definition of OwnOrContainingAppId() in TabContext.h
+     */
+    uint32_t OwnOrContainingAppId() const;
+
     ContentParent* Opener() {
         return mOpener;
     }
@@ -656,11 +661,13 @@ private:
     nsString mAppManifestURL;
 
     /**
-     * We cache mAppName instead of looking it up using mAppManifestURL when we
-     * need it because it turns out that getting an app from the apps service is
-     * expensive.
+     * We cache these values instead of looking it up using mAppManifestURL
+     * when we need it because it turns out that getting an app from the apps
+     * service is expensive.
      */
     nsString mAppName;
+    uint32_t mOwnAppId;
+    uint32_t mContainingAppId;
 
     // After we initiate shutdown, we also start a timer to ensure
     // that even content processes that are 100% blocked (say from

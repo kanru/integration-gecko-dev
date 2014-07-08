@@ -1327,8 +1327,9 @@ ContentParent::SetPriorityAndCheckIsAlive(ProcessPriority aPriority)
 
 // Helper for ContentParent::TransformPreallocatedIntoApp.
 static void
-TryGetNameFromManifestURL(const nsAString& aManifestURL,
-                          nsAString& aName)
+TryGetPropertiesFromManifestURL(const nsAString& aManifestURL,
+                                nsAString& aName,
+                                uint32_t& aAppId)
 {
     aName.Truncate();
     if (aManifestURL.IsEmpty() ||
@@ -1347,6 +1348,7 @@ TryGetNameFromManifestURL(const nsAString& aManifestURL,
     }
 
     app->GetName(aName);
+    app->GetLocalId(&aAppId);
 }
 
 void
@@ -1354,7 +1356,10 @@ ContentParent::TransformPreallocatedIntoApp(const nsAString& aAppManifestURL)
 {
     MOZ_ASSERT(IsPreallocated());
     mAppManifestURL = aAppManifestURL;
-    TryGetNameFromManifestURL(aAppManifestURL, mAppName);
+    TryGetPropertiesFromManifestURL(aAppManifestURL, mAppName, mOwnAppId);
+    if (mOwnAppId == nsIScriptSecurityManager::NO_APP_ID && mOpener) {
+        mContainingAppId = mOpener->OwnOrContainingAppId();
+    }
 }
 
 void
@@ -1363,6 +1368,9 @@ ContentParent::TransformPreallocatedIntoBrowser()
     // Reset mAppManifestURL, mIsForBrowser and mOSPrivileges for browser.
     mAppManifestURL.Truncate();
     mIsForBrowser = true;
+    if (mOpener) {
+        mContainingAppId = mOpener->OwnOrContainingAppId();
+    }
 }
 
 void
@@ -1796,6 +1804,8 @@ ContentParent::InitializeMembers()
     mCalledClose = false;
     mCalledCloseWithError = false;
     mCalledKillHard = false;
+    mOwnAppId = nsIScriptSecurityManager::NO_APP_ID;
+    mContainingAppId = nsIScriptSecurityManager::NO_APP_ID;
 }
 
 ContentParent::ContentParent(mozIApplication* aApp,
@@ -1829,8 +1839,11 @@ ContentParent::ContentParent(mozIApplication* aApp,
     if (aApp) {
         aApp->GetManifestURL(mAppManifestURL);
         aApp->GetName(mAppName);
+        aApp->GetLocalId(&mOwnAppId);
     } else if (aIsForPreallocated) {
         mAppManifestURL = MAGIC_PREALLOCATED_APP_MANIFEST_URL;
+    } else if (mOpener) {
+        mContainingAppId = mOpener->OwnOrContainingAppId();
     }
 
     // From this point on, NS_WARNING, NS_ASSERTION, etc. should print out the
@@ -2098,6 +2111,15 @@ ContentParent::Pid()
         return -1;
     }
     return base::GetProcId(mSubprocess->GetChildProcessHandle());
+}
+
+uint32_t
+ContentParent::OwnOrContainingAppId() const
+{
+    if (mOwnAppId != nsIScriptSecurityManager::NO_APP_ID) {
+        return mOwnAppId;
+    }
+    return mContainingAppId;
 }
 
 bool
