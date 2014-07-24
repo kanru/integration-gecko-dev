@@ -824,6 +824,7 @@ SimpleTest.finish = function() {
     SimpleTest._alreadyFinished = true;
 
     var afterCleanup = function() {
+        dump("SpecialPowers " + SpecialPowers.wrap + "\n");
         if (SpecialPowers.DOMWindowUtils.isTestControllingRefreshes) {
             SimpleTest.ok(false, "test left refresh driver under test control");
             SpecialPowers.DOMWindowUtils.restoreNormalRefresh();
@@ -847,6 +848,9 @@ SimpleTest.finish = function() {
                                + "it.)");
         }
 
+        dump("XXXX SimpleTest: parentRunner is " + parentRunner + "\n");
+        dump("XXXX SimpleTest: parentRunner.testFinished is "
+             + parentRunner.testFinished + "\n");
         if (parentRunner) {
             /* We're running in an iframe, and the parent has a TestRunner */
             parentRunner.testFinished(SimpleTest._tests);

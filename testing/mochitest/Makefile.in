@@ -32,6 +32,7 @@ SERV_FILES = 	\
 		server.js \
 		chunkifyTests.js \
 		manifestLibrary.js \
+		nested_setup.js \
 		harness.xul \
 		browser-test-overlay.xul \
 		browser-test.js \

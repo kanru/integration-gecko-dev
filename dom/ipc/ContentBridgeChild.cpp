@@ -102,6 +102,7 @@ ContentBridgeChild::SendPBrowserConstructor(PBrowserChild* aActor,
 jsipc::JavaScriptChild *
 ContentBridgeChild::GetCPOWManager()
 {
+  //sleep(30);
   if (ManagedPJavaScriptChild().Length()) {
     return static_cast<JavaScriptChild*>(ManagedPJavaScriptChild()[0]);
   }

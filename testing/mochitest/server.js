@@ -1,3 +1,4 @@
+/*global  */
 /* -*- indent-tabs-mode: nil; js-indent-level: 2 -*- */
 /* vim:set ts=2 sw=2 sts=2 et: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
@@ -45,7 +46,7 @@ function makeTagFunc(tagName)
   {
     var startChildren = 0;
     var response = "";
-    
+
     // write the start tag and attributes
     response += "<" + tagName;
     // if attr is an object, write attributes
@@ -57,7 +58,7 @@ function makeTagFunc(tagName)
       }
     }
     response += ">";
-    
+
     // iterate through the rest of the args
     for (var i = startChildren; i < arguments.length; i++) {
       if (typeof arguments[i] == 'function') {
@@ -122,7 +123,7 @@ function runServer()
   //if a.b.c.d or 'localhost'
   if (typeof(_SERVER_ADDR) != "undefined") {
     if (_SERVER_ADDR == "localhost") {
-      gServerAddress = _SERVER_ADDR;      
+      gServerAddress = _SERVER_ADDR;
     } else {
       var quads = _SERVER_ADDR.split('.');
       if (quads.length == 4) {
@@ -207,6 +208,7 @@ function createMochitestServer(serverBasePath)
   server.registerDirectory("/", serverBasePath);
   server.registerPathHandler("/server/shutdown", serverShutdown);
   server.registerPathHandler("/server/debug", serverDebug);
+  server.registerPathHandler("/nested", nestedTest);
   server.registerContentType("sjs", "sjs"); // .sjs == CGI-like functionality
   server.registerContentType("jar", "application/x-jar");
   server.registerContentType("ogg", "application/ogg");
@@ -298,7 +300,7 @@ function processLocations(server)
           throw "Multiple primary locations in server-locations.txt, " +
                 "line " + lineno;
         }
-  
+
         server.identity.setPrimary(scheme, host, port);
         seenPrimary = true;
         continue;
@@ -390,11 +392,11 @@ function list(requestPath, directory, recurse)
 
   var dir = directory.QueryInterface(Ci.nsIFile);
   var links = {};
-  
+
   // The SimpleTest directory is hidden
   var files = [file for (file in dirIter(dir))
                if (file.exists() && file.path.indexOf("SimpleTest") == -1)];
-  
+
   // Sort files by name, so that tests can be run in a pre-defined order inside
   // a given directory (see bug 384823)
   function leafNameComparator(first, second) {
@@ -405,7 +407,7 @@ function list(requestPath, directory, recurse)
     return 0;
   }
   files.sort(leafNameComparator);
-  
+
   count = files.length;
   for each (var file in files) {
     var key = path + file.leafName;
@@ -441,8 +443,8 @@ function isTest(filename, pattern)
   var testPrefix = typeof(_TEST_PREFIX) == "string" ? _TEST_PREFIX : "test_";
   var testPattern = new RegExp("^" + testPrefix);
 
-  pathPieces = filename.split('/');
-    
+  var pathPieces = filename.split('/');
+
   return testPattern.test(pathPieces[pathPieces.length - 1]) &&
          filename.indexOf(".js") == -1 &&
          filename.indexOf(".css") == -1 &&
@@ -461,7 +463,7 @@ function linksToListItems(links)
       ? "non-test invisible"
       : "test";
     if (value instanceof Object) {
-      children = UL({class: "testdir"}, linksToListItems(value)); 
+      children = UL({class: "testdir"}, linksToListItems(value));
     } else {
       children = "";
     }
@@ -596,6 +598,28 @@ function convertManifestToTestLinks(root, manifest)
 }
 
 /**
+ * Produce a test harness page that has one remote iframe
+ */
+function nestedTest(metadata, response)
+{
+  response.setStatusLine("1.1", 200, "OK");
+  response.setHeader("Content-type", "text/html;charset=utf-8", false);
+  response.write(
+    HTML(
+      HEAD(
+        TITLE("Mochitest | ", metadata.path),
+        LINK({rel: "stylesheet",
+              type: "text/css", href: "/static/harness.css"}),
+        SCRIPT({type: "text/javascript",
+                src: "/nested_setup.js"})),
+      BODY(
+        DIV({class: "container"},
+            DIV({class: "frameholder"},
+                IFRAME({scrolling: "no", id: "nested-parent-frame", width: "100%", height: "100%", src: "/tests?"+metadata.queryString, remote: "true"}))))));
+        
+}
+
+/**
  * Produce a test harness page containing all the test cases
  * below it, recursively.
  */
@@ -709,12 +733,12 @@ function defaultDirHandler(metadata, response)
   response.setStatusLine("1.1", 200, "OK");
   response.setHeader("Content-type", "text/html;charset=utf-8", false);
   try {
-    if (metadata.path.indexOf("/tests") != 0) {
-      regularListing(metadata, response);
-    } else {
+    if (metadata.path.indexOf("/tests") == 0) {
       testListing(metadata, response);
+    } else {
+      regularListing(metadata, response);
     }
   } catch (ex) {
     response.write(ex);
-  }  
+  }
 }

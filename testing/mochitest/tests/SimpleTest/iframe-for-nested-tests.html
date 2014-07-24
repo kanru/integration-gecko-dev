@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>iframe for nested tests</title>
+    <script>
+     window.addEventListener("load", function() {
+       iframe = document.getElementById("nested-frame");
+       iframe.src = location.hash.substr(1);
+       iframe.name = location.hash.substr(1);
+       iframe.width = "500";
+       iframe.height = "300";
+     });
+    </script>
+  </head>
+  <body>
+    <iframe id="nested-frame"></iframe>
+  </body>
+</html>

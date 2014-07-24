@@ -1544,12 +1544,12 @@ nsFrameLoader::ShouldUseRemoteProcess()
     return false;
   }
 
-  // Don't try to launch nested children if we don't have OMTC.
-  // They won't render!
-  if (XRE_GetProcessType() == GeckoProcessType_Content &&
-      !CompositorChild::ChildProcessHasCompositor()) {
-    return false;
-  }
+  // // Don't try to launch nested children if we don't have OMTC.
+  // // They won't render!
+  // if (XRE_GetProcessType() == GeckoProcessType_Content &&
+  //     !CompositorChild::ChildProcessHasCompositor()) {
+  //   return false;
+  // }
 
   if (XRE_GetProcessType() == GeckoProcessType_Content &&
       !(PR_GetEnv("MOZ_NESTED_OOP_TABS") ||
@@ -1564,6 +1564,11 @@ nsFrameLoader::ShouldUseRemoteProcess()
 
     return Preferences::GetBool("dom.ipc.browser_frames.oop_by_default", false);
   }
+
+  return mOwnerContent->AttrValueIs(kNameSpaceID_None,
+                                    nsGkAtoms::Remote,
+                                    nsGkAtoms::_true,
+                                    eCaseMatters);
 
   // Otherwise, we're remote if we have "remote=true" and we're either a
   // browser frame or a XUL element.
@@ -2054,6 +2059,10 @@ nsFrameLoader::TryRemoteBrowser()
 {
   NS_ASSERTION(!mRemoteBrowser, "TryRemoteBrowser called with a remote browser already?");
 
+  if (XRE_GetProcessType() == GeckoProcessType_Content) {
+    // sleep(30);
+  }
+
   nsIDocument* doc = mOwnerContent->GetDocument();
   if (!doc) {
     return false;
@@ -2083,25 +2092,25 @@ nsFrameLoader::TryRemoteBrowser()
     openerContentParent = openingTab->Manager()->AsContentParent();
   }
 
-  // <iframe mozbrowser> gets to skip these checks.
-  if (!OwnerIsBrowserOrAppFrame()) {
-    if (parentDocShell->ItemType() != nsIDocShellTreeItem::typeChrome) {
-      return false;
-    }
+  // // <iframe mozbrowser> gets to skip these checks.
+  // if (!OwnerIsBrowserOrAppFrame()) {
+  //   if (parentDocShell->ItemType() != nsIDocShellTreeItem::typeChrome) {
+  //     return false;
+  //   }
 
-    if (!mOwnerContent->IsXUL()) {
-      return false;
-    }
+  //   if (!mOwnerContent->IsXUL()) {
+  //     return false;
+  //   }
 
-    nsAutoString value;
-    mOwnerContent->GetAttr(kNameSpaceID_None, nsGkAtoms::type, value);
+  //   nsAutoString value;
+  //   mOwnerContent->GetAttr(kNameSpaceID_None, nsGkAtoms::type, value);
 
-    if (!value.LowerCaseEqualsLiteral("content") &&
-        !StringBeginsWith(value, NS_LITERAL_STRING("content-"),
-                          nsCaseInsensitiveStringComparator())) {
-      return false;
-    }
-  }
+  //   if (!value.LowerCaseEqualsLiteral("content") &&
+  //       !StringBeginsWith(value, NS_LITERAL_STRING("content-"),
+  //                         nsCaseInsensitiveStringComparator())) {
+  //     return false;
+  //   }
+  // }
 
   uint32_t chromeFlags = 0;
   nsCOMPtr<nsIDocShellTreeOwner> parentOwner;

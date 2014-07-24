@@ -370,6 +370,12 @@ class MochitestOptions(optparse.OptionParser):
           "dest": "e10s",
           "help": "Run tests with electrolysis preferences and test filtering enabled.",
         }],
+        [["--nested"],
+        { "action": "store_true",
+          "default": False,
+          "dest": "nested",
+          "help": "Run tests with nested-oop preferences and test filtering enabled.",
+        }],
         [["--dmd-path"],
          { "action": "store",
            "default": None,
@@ -447,6 +453,7 @@ class MochitestOptions(optparse.OptionParser):
         """ verify correct options and cleanup paths """
 
         mozinfo.update({"e10s": options.e10s}) # for test manifest parsing.
+        mozinfo.update({"nested": options.nested}) # for test manifest parsing.
 
         if options.app is None:
             if build_obj is not None:

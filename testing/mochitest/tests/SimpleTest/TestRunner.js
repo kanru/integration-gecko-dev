@@ -475,6 +475,7 @@ TestRunner._makeIframe = function (url, retry) {
     iframe.src = url;
     iframe.name = url;
     iframe.width = "500";
+
     return iframe;
 };
 
@@ -729,11 +730,13 @@ TestRunner.testFinished = function(tests) {
         TestRunner._makeIframe(interstitialURL, 0);
     }
 
+    dump("XXXXX going to run SpecialPowers.executeAfterFlushingMessageQueue\n");
     SpecialPowers.executeAfterFlushingMessageQueue(function() {
         cleanUpCrashDumpFiles();
         SpecialPowers.flushAllAppsLaunchable();
         SpecialPowers.flushPermissions(function () { SpecialPowers.flushPrefEnv(runNextTest); });
     });
+    dump("XXXXX ready.....\n");
 };
 
 TestRunner.testUnloaded = function() {

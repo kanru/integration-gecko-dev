@@ -404,6 +404,7 @@ class MochitestUtilsMixin(object):
 
   # Path to the test script on the server
   TEST_PATH = "tests"
+  NESTED_TEST_PATH = "nested"
   CHROME_PATH = "redirect.html"
   urlOpts = []
 
@@ -596,6 +597,8 @@ class MochitestUtilsMixin(object):
       testURL = "/".join([testHost, self.CHROME_PATH])
     elif options.browserChrome:
       testURL = "about:blank"
+    if options.nested:
+      testURL = "/".join([testHost, self.NESTED_TEST_PATH])
     return testURL
 
   def buildTestPath(self, options, testsToFilter=None, disabled=True):
@@ -1081,6 +1084,7 @@ class Mochitest(MochitestUtilsMixin):
       options.extraPrefs.append("testing.browserTestHarness.timeout=%d" % options.timeout)
     options.extraPrefs.append("browser.tabs.remote=%s" % ('true' if options.e10s else 'false'))
     options.extraPrefs.append("browser.tabs.remote.autostart=%s" % ('true' if options.e10s else 'false'))
+    options.extraPrefs.append("dom.ipc.tabs.nested.enabled=%s" % ('true' if options.nested else 'false'))
 
     # get extensions to install
     extensions = self.getExtensionsToInstall(options)

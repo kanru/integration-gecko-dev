@@ -832,6 +832,9 @@ NS_CreateServicesFromCategory(const char* aCategory,
 {
   nsresult rv;
 
+  printf_stderr("[Pid %d] NS_CreateServicesFromCategory(%s)\n",
+                getpid(), aCategory);
+
   nsCOMPtr<nsICategoryManager> categoryManager =
     do_GetService("@mozilla.org/categorymanager;1");
   if (!categoryManager) {

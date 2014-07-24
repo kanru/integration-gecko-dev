@@ -618,6 +618,7 @@ ContentParent::StartUp()
     sCanLaunchSubprocesses = true;
 
     if (XRE_GetProcessType() != GeckoProcessType_Default) {
+        // sleep(30);
         return;
     }
 
@@ -854,7 +855,7 @@ ContentParent::CreateBrowserOrApp(const TabContext& aContext,
         nsRefPtr<TabParent> tp;
         nsRefPtr<nsIContentParent> constructorSender;
         if (XRE_GetProcessType() != GeckoProcessType_Default) {
-            MOZ_ASSERT(aContext.IsBrowserElement());
+            // MOZ_ASSERT(aContext.IsBrowserElement());
             ContentChild* child = ContentChild::GetSingleton();
             uint64_t id;
             bool isForApp;
