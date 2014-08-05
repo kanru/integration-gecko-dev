@@ -98,6 +98,7 @@
 #include "nsIPresShell.h"
 #include "nsIRemoteBlob.h"
 #include "nsIScriptError.h"
+#include "nsIScriptSecurityManager.h"
 #include "nsISiteSecurityService.h"
 #include "nsIStyleSheet.h"
 #include "nsISupportsPrimitives.h"
