@@ -91,6 +91,22 @@ PBOverrideStatusFromLoadContext(const SerializedLoadContext& aSerialized)
   return kPBOverride_Unset;
 }
 
+namespace {
+bool
+CanReuseParentApp()
+{
+  static bool sDidAddVarCache = false;
+  static bool sCanReuseParentApp = false;
+  if (!sDidAddVarCache) {
+    sDidAddVarCache = true;
+    Preferences::GetBool("dom.ipc.reuse_parent_app");
+    Preferences::AddBoolVarCache(&sCanReuseParentApp,
+                                 "dom.ipc.reuse_parent_app", false);
+  }
+  return sCanReuseParentApp;
+}
+} // anonymous namespace
+
 const char*
 NeckoParent::GetValidatedAppInfo(const SerializedLoadContext& aSerialized,
                                  PContentParent* aContent,
@@ -115,9 +131,9 @@ NeckoParent::GetValidatedAppInfo(const SerializedLoadContext& aSerialized,
     return "SerializedLoadContext from child is null";
   }
 
+  ContentParent* cp = static_cast<ContentParent*>(aContent);
   const InfallibleTArray<PBrowserParent*>& browsers =
-    aContent->ManagedPBrowserParent();
-
+    cp->ManagedPBrowserParent();
   for (uint32_t i = 0; i < browsers.Length(); i++) {
     nsRefPtr<TabParent> tabParent = static_cast<TabParent*>(browsers[i]);
     uint32_t appId = tabParent->OwnOrContainingAppId();
@@ -160,6 +176,15 @@ NeckoParent::GetValidatedAppInfo(const SerializedLoadContext& aSerialized,
         continue;
       }
     }
+  }
+  // When the TabParent doesn't live in the ContentParent. Assume that
+  // one content process hosts one app. We can't use this information
+  // when the app could reuse the parent app process.
+  if (cp->OwnOrContainingAppId() != NECKO_NO_APP_ID &&
+      !CanReuseParentApp()) {
+    *aAppId = cp->OwnOrContainingAppId();
+    *aInBrowserElement = cp->IsForBrowser();
+    return nullptr;
   }
 
   if (browsers.Length() != 0) {
