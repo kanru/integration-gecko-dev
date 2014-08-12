@@ -160,41 +160,7 @@ function wrapPrivileged(obj) {
   if (isWrapper(obj))
     throw "Trying to double-wrap object!";
 
-  // Make our core wrapper object.
-  var handler = new SpecialPowersHandler(obj);
-
-  // If the object is callable, make a function proxy.
-  if (typeof obj === "function") {
-    var callTrap = function() {
-      // The invocant and arguments may or may not be wrappers. Unwrap them if necessary.
-      var invocant = unwrapIfWrapped(this);
-      var unwrappedArgs = Array.prototype.slice.call(arguments).map(unwrapIfWrapped);
-
-      try {
-        return wrapPrivileged(doApply(obj, invocant, unwrappedArgs));
-      } catch (e) {
-        // Wrap exceptions and re-throw them.
-        throw wrapIfUnwrapped(e);
-      }
-    };
-    var constructTrap = function() {
-      // The arguments may or may not be wrappers. Unwrap them if necessary.
-      var unwrappedArgs = Array.prototype.slice.call(arguments).map(unwrapIfWrapped);
-
-      // We want to invoke "obj" as a constructor, but using unwrappedArgs as
-      // the arguments.  Make sure to wrap and re-throw exceptions!
-      try {
-        return wrapPrivileged(new obj(...unwrappedArgs));
-      } catch (e) {
-        throw wrapIfUnwrapped(e);
-      }
-    };
-
-    return Proxy.createFunction(handler, callTrap, constructTrap);
-  }
-
-  // Otherwise, just make a regular object proxy.
-  return Proxy.create(handler);
+  return new Proxy(obj, SpecialPowersHandler);
 };
 
 function unwrapPrivileged(x) {
@@ -227,31 +193,27 @@ function crawlProtoChain(obj, fn) {
   return undefined;
 };
 
-function SpecialPowersHandler(obj) {
-  this.wrappedObject = obj;
-};
-
-// Allow us to transitively maintain the membrane by wrapping descriptors
-// we return.
-SpecialPowersHandler.prototype.doGetPropertyDescriptor = function(name, own) {
-
+// Allow us to transitively maintain the membrane by wrapping
+// descriptors we return.
+function doGetPropertyDescriptor(obj, name, own) {
   // Handle our special API.
   if (name == "SpecialPowers_wrappedObject")
-    return { value: this.wrappedObject, writeable: false, configurable: false, enumerable: false };
+    return { value: obj, writeable: false,
+             configurable: false, enumerable: false };
 
   //
   // Call through to the wrapped object.
   //
-  // Note that we have several cases here, each of which requires special handling.
+  // Note that we have several cases here, each of which
+  // requires special handling.
   //
   var desc;
-  var obj = this.wrappedObject;
   function isWrappedNativeXray(o) {
     if (!Cu.isXrayWrapper(o))
       return false;
     var proto = Object.getPrototypeOf(o);
     return /XPC_WN/.test(Cu.getClassName(o, /* unwrap = */ true)) ||
-           (proto && /XPC_WN/.test(Cu.getClassName(proto, /* unwrap = */ true)));
+      (proto && /XPC_WN/.test(Cu.getClassName(proto, /* unwrap = */ true)));
   }
 
   // Case 1: Own Properties.
@@ -264,10 +226,7 @@ SpecialPowersHandler.prototype.doGetPropertyDescriptor = function(name, own) {
   //
   // Here, we can just crawl the prototype chain, calling
   // Object.getOwnPropertyDescriptor until we find what we want.
-  //
-  // NB: Make sure to check this.wrappedObject here, rather than obj, because
-  // we may have waived Xray on obj above.
-  else if (!isWrappedNativeXray(this.wrappedObject))
+  else if (!isWrappedNativeXray(obj))
     desc = crawlProtoChain(obj, function(o) {return callGetOwnPropertyDescriptor(o, name);});
 
   // Case 3: Not own, no meaningful prototype. This corresponds to old-style
@@ -308,84 +267,84 @@ SpecialPowersHandler.prototype.doGetPropertyDescriptor = function(name, own) {
   // Tell a white lie.
   desc.configurable = true;
 
-  // Transitively maintain the wrapper membrane.
-  function wrapIfExists(key) { if (key in desc) desc[key] = wrapPrivileged(desc[key]); };
-  wrapIfExists('value');
-  wrapIfExists('get');
-  wrapIfExists('set');
-
   return desc;
 };
 
-SpecialPowersHandler.prototype.getOwnPropertyDescriptor = function(name) {
-  return this.doGetPropertyDescriptor(name, true);
-};
+var SpecialPowersHandler = {
+  "construct": function(target, args) {
+    // The arguments may or may not be wrappers. Unwrap them if necessary.
+    var unwrappedArgs = Array.prototype.slice.call(args).map(unwrapIfWrapped);
 
-SpecialPowersHandler.prototype.getPropertyDescriptor = function(name) {
-  return this.doGetPropertyDescriptor(name, false);
-};
+    // We want to invoke "obj" as a constructor, but using unwrappedArgs as
+    // the arguments.  Make sure to wrap and re-throw exceptions!
+    try {
+      return wrapPrivileged(new target(...unwrappedArgs));
+    } catch (e) {
+      throw wrapIfUnwrapped(e);
+    }
+  },
+  "apply": function(target, thisValue, args) {
+    // The invocant and arguments may or may not be wrappers. Unwrap
+    // them if necessary.
+    var invocant = unwrapIfWrapped(thisValue);
+    var unwrappedArgs = Array.prototype.slice.call(args).map(unwrapIfWrapped);
 
-function doGetOwnPropertyNames(obj, props) {
+    try {
+      return wrapPrivileged(doApply(target, invocant, unwrappedArgs));
+    } catch (e) {
+      // Wrap exceptions and re-throw them.
+      throw wrapIfUnwrapped(e);
+    }
+  },
+  "get": function(target, prop, receiver) {
+    var desc = doGetPropertyDescriptor(target, prop, false);
+    if (desc && desc.get) {
+      return wrapIfUnwrapped(doApply(desc.get, target, []));
+    }
+    if (desc && desc.value) {
+      if (desc.writable || desc.configurable) {
+        return wrapIfUnwrapped(desc.value);
+      } else {
+        return desc.value;
+      }
+    }
+    return undefined;
+  },
+  "set": function(target, prop, val, receiver) {
+    var desc = doGetPropertyDescriptor(target, prop, false);
+    var unwrappedVal = unwrapIfWrapped(val);
+    if (desc && desc.set) {
+      return doApply(desc.set, target, [unwrappedVal]);
+    }
+    return target[prop] = val;
+  },
+  "getOwnPropertyDescriptor": function(target, name) {
+    var desc = doGetPropertyDescriptor(target, name, true);
+    // Transitively maintain the wrapper membrane.
+    function wrapIfExists(key) {
+      if (key in desc)
+        desc[key] = wrapPrivileged(desc[key]);
+    };
+    wrapIfExists('value');
+    wrapIfExists('get');
+    wrapIfExists('set');
+    return desc;
+  },
+  "ownKeys": function(target) {
+    // Insert our special API. It's not enumerable, but getPropertyNames()
+    // includes non-enumerable properties.
+    var props = ['SpecialPowers_wrappedObject'];
 
-  // Insert our special API. It's not enumerable, but getPropertyNames()
-  // includes non-enumerable properties.
-  var specialAPI = 'SpecialPowers_wrappedObject';
-  if (props.indexOf(specialAPI) == -1)
-    props.push(specialAPI);
+    // Do the normal thing.
+    var flt = function(a) { return props.indexOf(a) == -1; };
+    props = props.concat(Object.getOwnPropertyNames(obj).filter(flt));
 
-  // Do the normal thing.
-  var flt = function(a) { return props.indexOf(a) == -1; };
-  props = props.concat(Object.getOwnPropertyNames(obj).filter(flt));
-
-  // If we've got an Xray wrapper, include the expandos as well.
-  if ('wrappedJSObject' in obj)
-    props = props.concat(Object.getOwnPropertyNames(obj.wrappedJSObject)
-                         .filter(flt));
-
-  return props;
-}
-
-SpecialPowersHandler.prototype.getOwnPropertyNames = function() {
-  return doGetOwnPropertyNames(this.wrappedObject, []);
-};
-
-SpecialPowersHandler.prototype.getPropertyNames = function() {
-
-  // Manually walk the prototype chain, making sure to add only property names
-  // that haven't been overridden.
-  //
-  // There's some trickiness here with Xray wrappers. Xray wrappers don't have
-  // a prototype, so we need to unwrap them if we want to get all of the names
-  // with Object.getOwnPropertyNames(). But we don't really want to unwrap the
-  // base object, because that will include expandos that are inaccessible via
-  // our implementation of get{,Own}PropertyDescriptor(). So we unwrap just
-  // before accessing the prototype. This ensures that we get Xray vision on
-  // the base object, and no Xray vision for the rest of the way up.
-  var obj = this.wrappedObject;
-  var props = [];
-  while (obj) {
-    props = doGetOwnPropertyNames(obj, props);
-    obj = Object.getPrototypeOf(XPCNativeWrapper.unwrap(obj));
+    // If we've got an Xray wrapper, include the expandos as well.
+    if ('wrappedJSObject' in obj)
+      props = props.concat(Object.getOwnPropertyNames(obj.wrappedJSObject)
+                           .filter(flt));
+    return props;
   }
-  return props;
-};
-
-SpecialPowersHandler.prototype.defineProperty = function(name, desc) {
-  return Object.defineProperty(this.wrappedObject, name, desc);
-};
-
-SpecialPowersHandler.prototype.delete = function(name) {
-  return delete this.wrappedObject[name];
-};
-
-SpecialPowersHandler.prototype.fix = function() { return undefined; /* Throws a TypeError. */ };
-
-// Per the ES5 spec this is a derived trap, but it's fundamental in spidermonkey
-// for some reason. See bug 665198.
-SpecialPowersHandler.prototype.enumerate = function() {
-  var t = this;
-  var filt = function(name) { return t.getPropertyDescriptor(name).enumerable; };
-  return this.getPropertyNames().filter(filt);
 };
 
 // SPConsoleListener reflects nsIConsoleMessage objects into JS in a
