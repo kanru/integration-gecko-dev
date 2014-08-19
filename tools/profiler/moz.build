@@ -9,6 +9,7 @@ if CONFIG['MOZ_ENABLE_PROFILER_SPS']:
 
     XPIDL_MODULE = 'profiler'
     XPIDL_SOURCES += [
+        'nsIMemoryProfiler.idl',
         'nsIProfiler.idl',
         'nsIProfileSaveEvent.idl',
     ]
@@ -25,6 +26,7 @@ if CONFIG['MOZ_ENABLE_PROFILER_SPS']:
     UNIFIED_SOURCES += [
         'BreakpadSampler.cpp',
         'JSStreamWriter.cpp',
+        'MemoryProfiler.cpp',
         'nsProfiler.cpp',
         'nsProfilerFactory.cpp',
         'platform.cpp',

@@ -1,0 +1,45 @@
+/* -*- Mode: IDL; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+// profiler = Cc["@mozilla.org/tools/memory-profiler;1"].getService(Ci.nsIMemoryProfiler)
+// profiler.startProfiler(window)
+
+[scriptable, uuid(09908304-716b-459a-b490-e6f5df9520db)]
+interface nsIMemoryEntry : nsISupports
+{
+  // Size of allocated memory
+  readonly attribute unsigned long size;
+
+  // Index to frame string
+  readonly attribute jsval stack;
+  readonly attribute unsigned long timeStamp;
+};
+
+[scriptable, function, uuid(b3c66daf-bef8-4191-b55e-5eff81b5a67f)]
+interface nsIMemoryEntriesHandler : nsISupports
+{
+  void handleEntry(in nsIMemoryEntry entry);
+};
+
+[scriptable, uuid(033d023b-946c-40de-85e7-3a57d01b41f6)]
+interface nsIMemoryProfiler : nsISupports
+{
+  // global should be queried to nsIGlobalObject, but nsIGlobalObject
+  // is not scriptable so we use nsISupports
+  void startProfiler(in nsISupports global);
+  void stopProfiler();
+  void resetProfiler();
+  void forEachRetainingEntries(in nsIMemoryEntriesHandler handler);
+  void forEachAllocatedEntries(in nsIMemoryEntriesHandler handler);
+
+  DOMString getFrame(in unsigned long index);
+};
+
+// std::vector<const std::string *> vFrameNames
+// std::vector<const std::vector<size_t> *> vStacktraces;
+// std::unordered_map<void *, AllocEntry> retainingEntries;
+// std::vector<std::pair<void *, AllocEntry>> allocatedEntries;
