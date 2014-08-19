@@ -304,8 +304,12 @@ WifiGeoPositionProvider.prototype = {
             self.wifiService.stopWatching(self);
           }
           if (gWifiScanningEnabled) {
-            self.wifiService = Cc["@mozilla.org/wifi/monitor;1"].getService(Ci.nsIWifiMonitor);
-            self.wifiService.startWatching(self);
+            try {
+              self.wifiService = Cc["@mozilla.org/wifi/monitor;1"].getService(Ci.nsIWifiMonitor);
+              self.wifiService.startWatching(self);
+            } catch(ex) {
+              LOG("Can't create wifi service");
+            }
           }
         }
       },
@@ -329,8 +333,12 @@ WifiGeoPositionProvider.prototype = {
       if (this.wifiService) {
         this.wifiService.stopWatching(this);
       }
-      this.wifiService = Cc["@mozilla.org/wifi/monitor;1"].getService(Ci.nsIWifiMonitor);
-      this.wifiService.startWatching(this);
+      try {
+        this.wifiService = Cc["@mozilla.org/wifi/monitor;1"].getService(Ci.nsIWifiMonitor);
+        this.wifiService.startWatching(this);
+      } catch(ex) {
+        LOG("Can't create wifi service");
+      }
     }
 
     this.resetTimer();
