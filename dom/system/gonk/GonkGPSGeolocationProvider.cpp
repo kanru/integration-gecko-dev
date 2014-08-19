@@ -715,10 +715,9 @@ GonkGPSGeolocationProvider::NetworkLocationUpdate::Update(nsIDOMGeoPosition *pos
     const double rNewLon = lon * radsInDeg;
     const double rOldLat = sLastMLSPosLat * radsInDeg;
     const double rOldLon = sLastMLSPosLon * radsInDeg;
-    // WGS84 equatorial radius of earth = 6378137m
-    delta = std::acos( (std::sin(rNewLat) * std::sin(rOldLat)) +
-                       (std::cos(rNewLat) * std::cos(rOldLat) *
-                        std::cos(rOldLon - rNewLon)) ) * 6378137;
+    // cos(D) = sin(a)sin(b) + cos(a)cos(b)cos(C)
+    delta = (std::sin(rNewLat) * std::sin(rOldLat)) +
+      (std::cos(rNewLat) * std::cos(rOldLat) * std::cos(rOldLon - rNewLon));
   }
 
   sLastMLSPosLat = lat;
@@ -728,13 +727,28 @@ GonkGPSGeolocationProvider::NetworkLocationUpdate::Update(nsIDOMGeoPosition *pos
   // assume the MLS coord is unchanged, and stick with the GPS location
   const double kMinMLSCoordChangeInMeters = 10;
 
+  // The distance D rad on a unit sphere has bound
+  //
+  //   [acos(-1),acos(1)] = [PI,0]
+  //
+  // WGS84 equatorial radius of earth = 6378137m so 10m is equal to
+  // 10/6378137 rad
+  //
+  //   0.9999999999987709 = cos(10/6378137);
+  //
+  // Our delta cos(D) is bound to [-1,1]
+  //
+  // Any value smaller than cos(10/6378137) is larger than 10m when
+  // converted.
+  const double kMaxMLSCoordChangeInCosRads = 0.9999999999987709;
+
   // if we haven't seen anything from the GPS device for 10s,
   // always use this network derived location.
   const int kMaxGPSDelayBeforeConsideringMLS = 10000;
   int64_t diff = PR_Now() - provider->mLastGPSDerivedLocationTime;
   if (provider->mLocationCallback &&
       (diff > kMaxGPSDelayBeforeConsideringMLS ||
-       delta > kMinMLSCoordChangeInMeters)) {
+       delta < kMaxMLSCoordChangeInCosRads)) {
     provider->mLocationCallback->Update(position);
   }
 
