@@ -729,12 +729,12 @@ GonkGPSGeolocationProvider::NetworkLocationUpdate::Update(nsIDOMGeoPosition *pos
   const double kMinMLSCoordChangeInMeters = 10;
 
   // if we haven't seen anything from the GPS device for 10s,
-  // use this network derived location.
+  // always use this network derived location.
   const int kMaxGPSDelayBeforeConsideringMLS = 10000;
   int64_t diff = PR_Now() - provider->mLastGPSDerivedLocationTime;
-  if (provider->mLocationCallback && diff > kMaxGPSDelayBeforeConsideringMLS
-      && delta > kMinMLSCoordChangeInMeters)
-  {
+  if (provider->mLocationCallback &&
+      (diff > kMaxGPSDelayBeforeConsideringMLS ||
+       delta > kMinMLSCoordChangeInMeters)) {
     provider->mLocationCallback->Update(position);
   }
 
