@@ -18,6 +18,8 @@
 
 #include <pthread.h>
 #include <hardware/gps.h>
+#include <limits>
+#include <cmath>
 
 #include "mozilla/Preferences.h"
 #include "mozilla/Services.h"
@@ -699,7 +701,7 @@ GonkGPSGeolocationProvider::NetworkLocationUpdate::Update(nsIDOMGeoPosition *pos
   coords->GetLongitude(&lon);
   coords->GetAccuracy(&acc);
 
-  double delta = MAXFLOAT;
+  double delta = std::numeric_limits<double>::max();
 
   static double sLastMLSPosLat = 0;
   static double sLastMLSPosLon = 0;
@@ -714,9 +716,9 @@ GonkGPSGeolocationProvider::NetworkLocationUpdate::Update(nsIDOMGeoPosition *pos
     const double rOldLat = sLastMLSPosLat * radsInDeg;
     const double rOldLon = sLastMLSPosLon * radsInDeg;
     // WGS84 equatorial radius of earth = 6378137m
-    delta = acos( (sin(rNewLat) * sin(rOldLat)) +
-                  (cos(rNewLat) * cos(rOldLat) * cos(rOldLon - rNewLon)) )
-                  * 6378137;
+    delta = std::acos( (std::sin(rNewLat) * std::sin(rOldLat)) +
+                       (std::cos(rNewLat) * std::cos(rOldLat) *
+                        std::cos(rOldLon - rNewLon)) ) * 6378137;
   }
 
   sLastMLSPosLat = lat;
