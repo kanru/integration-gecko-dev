@@ -7,6 +7,7 @@
 include protocol PBlob;
 include protocol PBrowser;
 include protocol PContent;
+include protocol PContentContent;
 include protocol PJavaScript;
 
 include DOMTypes;
@@ -32,7 +33,11 @@ intr protocol PContentBridge
 
     manages PBlob;
     manages PBrowser;
+    manages PContentContent;
     manages PJavaScript;
+
+both:
+    async PContentContent();
 
 parent:
     sync SyncMessage(nsString aMessage, ClonedMessageData aData,

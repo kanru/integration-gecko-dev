@@ -21,6 +21,7 @@
 #include "mozilla/Preferences.h"
 #include "mozilla/dom/ContentBridgeChild.h"
 #include "mozilla/dom/ContentBridgeParent.h"
+#include "mozilla/dom/ContentContentChild.h"
 #include "mozilla/dom/DOMStorageIPC.h"
 #include "mozilla/dom/ExternalHelperAppChild.h"
 #include "mozilla/dom/PCrashReporterChild.h"
@@ -524,6 +525,7 @@ ContentChild::~ContentChild()
 }
 
 NS_INTERFACE_MAP_BEGIN(ContentChild)
+  NS_INTERFACE_MAP_ENTRY(ContentChild)
   NS_INTERFACE_MAP_ENTRY(nsIContentChild)
   NS_INTERFACE_MAP_ENTRY(nsISupports)
 NS_INTERFACE_MAP_END
@@ -913,6 +915,21 @@ ContentChild::AllocPBackgroundChild(Transport* aTransport,
                                     ProcessId aOtherProcess)
 {
     return BackgroundChild::Alloc(aTransport, aOtherProcess);
+}
+
+PContentContentChild*
+ContentChild::AllocPContentContentChild()
+{
+    MOZ_ASSERT(!ManagedPContentContentChild().Length());
+    PContentContentChild* child = new ContentContentChild(this);
+    return child;
+}
+
+bool
+ContentChild::DeallocPContentContentChild(PContentContentChild* aChild)
+{
+    delete aChild;
+    return true;
 }
 
 bool

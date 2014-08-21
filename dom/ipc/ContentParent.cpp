@@ -34,6 +34,7 @@
 #include "mozIApplication.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/dom/asmjscache/AsmJSCache.h"
+#include "mozilla/dom/ContentContentParent.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/DataStoreService.h"
 #include "mozilla/dom/ExternalHelperAppParent.h"
@@ -2060,6 +2061,8 @@ ContentParent::InitInternal(ProcessPriority aInitialPriority,
         }
     }
 
+    unused << SendPContentContentConstructor();
+
 #ifdef MOZ_CONTENT_SANDBOX
     bool shouldSandbox = true;
 #ifdef MOZ_NUWA_PROCESS
@@ -2482,6 +2485,9 @@ NS_IMPL_CYCLE_COLLECTING_ADDREF(ContentParent)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(ContentParent)
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(ContentParent)
+  if (aIID.Equals(NS_GET_IID(ContentParent)))
+    foundInterface = static_cast<nsIObserver *>(this);
+  else
   NS_INTERFACE_MAP_ENTRY(nsIContentParent)
   NS_INTERFACE_MAP_ENTRY(nsIObserver)
   NS_INTERFACE_MAP_ENTRY(nsIDOMGeoPositionCallback)
@@ -2694,6 +2700,21 @@ ContentParent::RecvGetXPCOMProcessAttributes(bool* aIsOffline)
     DebugOnly<nsresult> rv = io->GetOffline(aIsOffline);
     NS_ASSERTION(NS_SUCCEEDED(rv), "Failed getting offline?");
 
+    return true;
+}
+
+PContentContentParent*
+ContentParent::AllocPContentContentParent()
+{
+    MOZ_ASSERT(!ManagedPContentContentParent().Length());
+    PContentContentParent* parent = new ContentContentParent(this);
+    return parent;
+}
+
+bool
+ContentParent::DeallocPContentContentParent(PContentContentParent* aParent)
+{
+    delete aParent;
     return true;
 }
 

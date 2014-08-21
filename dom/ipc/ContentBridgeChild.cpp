@@ -4,8 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "mozilla/dom/ContentBridgeChild.h"
+#include "ContentBridgeChild.h"
+
 #include "mozilla/dom/ContentChild.h"
+#include "mozilla/dom/ContentContentChild.h"
 #include "mozilla/dom/StructuredCloneUtils.h"
 #include "mozilla/dom/TabChild.h"
 #include "mozilla/dom/ipc/Blob.h"
@@ -107,6 +109,21 @@ ContentBridgeChild::GetCPOWManager()
   }
   JavaScriptChild* actor = static_cast<JavaScriptChild*>(SendPJavaScriptConstructor());
   return actor;
+}
+
+PContentContentChild*
+ContentBridgeChild::AllocPContentContentChild()
+{
+  MOZ_ASSERT(!ManagedPContentContentChild().Length());
+  PContentContentChild* child = new ContentContentChild(this);
+  return child;
+}
+
+bool
+ContentBridgeChild::DeallocPContentContentChild(PContentContentChild* aChild)
+{
+  delete aChild;
+  return true;
 }
 
 mozilla::jsipc::PJavaScriptChild *

@@ -10,16 +10,24 @@
 #include "mozilla/dom/PContentBridgeChild.h"
 #include "mozilla/dom/nsIContentChild.h"
 
+#define CONTENTBRIDGECHILD_IID                                  \
+  { 0x7c0a91b5, 0xe56d, 0x4489,                                 \
+    { 0x8d, 0x4f, 0x7b, 0x88, 0x6a, 0x9d, 0x67, 0x4b } }
+
 namespace mozilla {
 namespace dom {
+
+class ContentContentChild;
 
 class ContentBridgeChild MOZ_FINAL : public PContentBridgeChild
                                    , public nsIContentChild
 {
 public:
-  ContentBridgeChild(Transport* aTransport);
+  NS_DECLARE_STATIC_IID_ACCESSOR(CONTENTBRIDGECHILD_IID)
 
   NS_DECL_ISUPPORTS
+
+  explicit ContentBridgeChild(Transport* aTransport);
 
   static ContentBridgeChild*
   Create(Transport* aTransport, ProcessId aOtherProcess);
@@ -48,6 +56,9 @@ public:
 protected:
   virtual ~ContentBridgeChild();
 
+  virtual PContentContentChild* AllocPContentContentChild() MOZ_OVERRIDE;
+  virtual bool DeallocPContentContentChild(PContentContentChild* aChild) MOZ_OVERRIDE;
+
   virtual PBrowserChild* AllocPBrowserChild(const IPCTabContext& aContext,
                                             const uint32_t& aChromeFlags,
                                             const uint64_t& aID,
@@ -73,6 +84,8 @@ protected: // members
   nsRefPtr<ContentBridgeChild> mSelfRef;
   Transport* mTransport; // owned
 };
+
+NS_DEFINE_STATIC_IID_ACCESSOR(ContentBridgeChild, CONTENTBRIDGECHILD_IID)
 
 } // dom
 } // mozilla

@@ -4,7 +4,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "mozilla/dom/ContentBridgeParent.h"
+#include "ContentBridgeParent.h"
+
+#include "mozilla/dom/ContentContentParent.h"
 #include "mozilla/dom/TabParent.h"
 #include "JavaScriptParent.h"
 #include "nsXULAppAPI.h"
@@ -57,6 +59,21 @@ ContentBridgeParent::DeferredDestroy()
 {
   mSelfRef = nullptr;
   // |this| was just destroyed, hands off
+}
+
+PContentContentParent*
+ContentBridgeParent::AllocPContentContentParent()
+{
+  MOZ_ASSERT(!ManagedPContentContentParent().Length());
+  PContentContentParent* parent = new ContentContentParent(this);
+  return parent;
+}
+
+bool
+ContentBridgeParent::DeallocPContentContentParent(PContentContentParent* aParent)
+{
+  delete aParent;
+  return true;
 }
 
 bool

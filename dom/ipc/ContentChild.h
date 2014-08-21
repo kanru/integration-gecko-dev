@@ -49,6 +49,11 @@ class ConsoleListener;
 class PStorageChild;
 class ClonedMessageData;
 class PFileDescriptorSetChild;
+class ContentContentChild;
+
+#define CONTENTCHILD_IID                                                \
+    { 0xa886ba58, 0x208c, 0x4483,                                       \
+        { 0xa9, 0x3b, 0x2f, 0xa4, 0xfa, 0x95, 0x75, 0x49 } }
 
 class ContentChild : public PContentChild
                    , public nsIContentChild
@@ -58,6 +63,8 @@ class ContentChild : public PContentChild
     typedef mozilla::ipc::URIParams URIParams;
 
 public:
+    NS_DECLARE_STATIC_IID_ACCESSOR(CONTENTCHILD_IID)
+
     ContentChild();
     virtual ~ContentChild();
     NS_IMETHOD QueryInterface(REFNSIID aIID, void** aInstancePtr);
@@ -105,6 +112,9 @@ public:
     PContentBridgeChild*
     AllocPContentBridgeChild(mozilla::ipc::Transport* transport,
                              base::ProcessId otherProcess) MOZ_OVERRIDE;
+
+    virtual PContentContentChild* AllocPContentContentChild() MOZ_OVERRIDE;
+    virtual bool DeallocPContentContentChild(PContentContentChild* aChild) MOZ_OVERRIDE;
 
     PCompositorChild*
     AllocPCompositorChild(mozilla::ipc::Transport* aTransport,
@@ -395,6 +405,8 @@ private:
 
     DISALLOW_EVIL_CONSTRUCTORS(ContentChild);
 };
+
+NS_DEFINE_STATIC_IID_ACCESSOR(ContentChild, CONTENTCHILD_IID)
 
 } // namespace dom
 } // namespace mozilla

@@ -64,6 +64,11 @@ class MemoryReport;
 class TabContext;
 class PFileDescriptorSetParent;
 class ContentBridgeParent;
+class ContentContentParent;
+
+#define CONTENTPARENT_IID                                       \
+    { 0x86d29e79, 0xc2fc, 0x4559,                               \
+        { 0x87, 0x78, 0x40, 0xa6, 0xb3, 0x13, 0x25, 0xdf } }
 
 class ContentParent : public PContentParent
                     , public nsIContentParent
@@ -78,6 +83,8 @@ class ContentParent : public PContentParent
     typedef mozilla::dom::ClonedMessageData ClonedMessageData;
 
 public:
+    NS_DECLARE_STATIC_IID_ACCESSOR(CONTENTPARENT_IID)
+
     virtual bool IsContentParent() MOZ_OVERRIDE { return true; }
     /**
      * Start up the content-process machinery.  This might include
@@ -220,6 +227,9 @@ public:
     void FriendlyName(nsAString& aName, bool aAnonymize = false);
 
     virtual void OnChannelError() MOZ_OVERRIDE;
+
+    virtual PContentContentParent* AllocPContentContentParent() MOZ_OVERRIDE;
+    virtual bool DeallocPContentContentParent(PContentContentParent* aParent) MOZ_OVERRIDE;
 
     virtual PIndexedDBParent* AllocPIndexedDBParent() MOZ_OVERRIDE;
     virtual bool
@@ -701,6 +711,8 @@ private:
     ScopedClose mChildXSocketFdDup;
 #endif
 };
+
+NS_DEFINE_STATIC_IID_ACCESSOR(ContentParent, CONTENTPARENT_IID)
 
 } // namespace dom
 } // namespace mozilla

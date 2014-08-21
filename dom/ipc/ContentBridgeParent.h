@@ -10,16 +10,24 @@
 #include "mozilla/dom/PContentBridgeParent.h"
 #include "mozilla/dom/nsIContentParent.h"
 
+#define CONTENTBRIDGEPARENT_IID                                 \
+  { 0x1cf11502, 0xdaa0, 0x4db1,                                 \
+    { 0xb2, 0x28, 0x55, 0xfd, 0x9a, 0x97, 0xf6, 0xf7 } }
+
 namespace mozilla {
 namespace dom {
+
+class ContentContentParent;
 
 class ContentBridgeParent : public PContentBridgeParent
                           , public nsIContentParent
 {
 public:
-  explicit ContentBridgeParent(Transport* aTransport);
+  NS_DECLARE_STATIC_IID_ACCESSOR(CONTENTBRIDGEPARENT_IID)
 
   NS_DECL_ISUPPORTS
+
+  explicit ContentBridgeParent(Transport* aTransport);
 
   virtual void ActorDestroy(ActorDestroyReason aWhy) MOZ_OVERRIDE;
   void DeferredDestroy();
@@ -71,6 +79,9 @@ protected:
   }
 
 protected:
+  virtual PContentContentParent* AllocPContentContentParent() MOZ_OVERRIDE;
+  virtual bool DeallocPContentContentParent(PContentContentParent* aParent) MOZ_OVERRIDE;
+
   virtual bool RecvSyncMessage(const nsString& aMsg,
                                const ClonedMessageData& aData,
                                const InfallibleTArray<jsipc::CpowEntry>& aCpows,
@@ -110,6 +121,8 @@ protected: // members
 private:
   friend class ContentParent;
 };
+
+NS_DEFINE_STATIC_IID_ACCESSOR(ContentBridgeParent, CONTENTBRIDGEPARENT_IID)
 
 } // dom
 } // mozilla

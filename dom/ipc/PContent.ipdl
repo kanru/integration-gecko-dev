@@ -11,6 +11,7 @@ include protocol PBluetooth;
 include protocol PBrowser;
 include protocol PCompositor;
 include protocol PContentBridge;
+include protocol PContentContent;
 include protocol PCycleCollectWithLogs;
 include protocol PCrashReporter;
 include protocol PExternalHelperApp;
@@ -300,6 +301,7 @@ intr protocol PContent
     manages PBlob;
     manages PBluetooth;
     manages PBrowser;
+    manages PContentContent;
     manages PCrashReporter;
     manages PCycleCollectWithLogs;
     manages PDeviceStorageRequest;
@@ -321,6 +323,8 @@ intr protocol PContent
     manages PRemoteSpellcheckEngine;
 
 both:
+    async PContentContent();
+
     // Depending on exactly how the new browser is being created, it might be
     // created from either the child or parent process!
     //
