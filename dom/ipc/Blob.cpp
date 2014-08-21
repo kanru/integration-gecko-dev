@@ -16,6 +16,8 @@
 #include "mozilla/dom/nsIContentChild.h"
 #include "mozilla/dom/PBlobStreamChild.h"
 #include "mozilla/dom/PBlobStreamParent.h"
+#include "mozilla/dom/PContentContentChild.h"
+#include "mozilla/dom/PContentContentParent.h"
 #include "mozilla/dom/PFileDescriptorSetParent.h"
 #include "mozilla/ipc/InputStreamUtils.h"
 #include "nsCOMPtr.h"
@@ -657,7 +659,7 @@ private:
       PFileDescriptorSetParent* fdSet = nullptr;
 
       if (!fds.IsEmpty()) {
-        auto* manager = static_cast<ContentParent*>(mBlobActor->Manager());
+        auto* manager = static_cast<ContentParent*>(mBlobActor->Manager()->Manager());
         MOZ_ASSERT(manager);
 
         fdSet = manager->SendPFileDescriptorSetConstructor(fds[0]);

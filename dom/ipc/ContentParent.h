@@ -8,7 +8,6 @@
 #define mozilla_dom_ContentParent_h
 
 #include "mozilla/dom/PContentParent.h"
-#include "mozilla/dom/nsIContentParent.h"
 #include "mozilla/ipc/GeckoChildProcessHost.h"
 #include "mozilla/dom/ipc/Blob.h"
 #include "mozilla/Attributes.h"
@@ -66,7 +65,6 @@ class PFileDescriptorSetParent;
 class ContentBridgeParent;
 
 class ContentParent : public PContentParent
-                    , public nsIContentParent
                     , public nsIObserver
                     , public nsIDOMGeoPositionCallback
                     , public mozilla::LinkedListElement<ContentParent>
@@ -78,7 +76,7 @@ class ContentParent : public PContentParent
     typedef mozilla::dom::ClonedMessageData ClonedMessageData;
 
 public:
-    virtual bool IsContentParent() MOZ_OVERRIDE { return true; }
+    virtual bool IsContentParent() { return true; }
     /**
      * Start up the content-process machinery.  This might include
      * scheduling pre-launch tasks.
@@ -151,11 +149,11 @@ public:
                                     const nsAString& aMessage,
                                     const mozilla::dom::StructuredCloneData& aData,
                                     JS::Handle<JSObject *> aCpows,
-                                    nsIPrincipal* aPrincipal) MOZ_OVERRIDE;
-    virtual bool CheckPermission(const nsAString& aPermission) MOZ_OVERRIDE;
-    virtual bool CheckManifestURL(const nsAString& aManifestURL) MOZ_OVERRIDE;
-    virtual bool CheckAppHasPermission(const nsAString& aPermission) MOZ_OVERRIDE;
-    virtual bool CheckAppHasStatus(unsigned short aStatus) MOZ_OVERRIDE;
+                                    nsIPrincipal* aPrincipal);
+    virtual bool CheckPermission(const nsAString& aPermission);
+    virtual bool CheckManifestURL(const nsAString& aManifestURL);
+    virtual bool CheckAppHasPermission(const nsAString& aPermission);
+    virtual bool CheckAppHasStatus(unsigned short aStatus);
 
     /** Notify that a tab is beginning its destruction sequence. */
     void NotifyTabDestroying(PBrowserParent* aTab);
@@ -172,8 +170,8 @@ public:
     bool RequestRunToCompletion();
 
     bool IsAlive();
-    virtual bool IsForApp() MOZ_OVERRIDE;
-    virtual bool IsForBrowser() MOZ_OVERRIDE
+    virtual bool IsForApp();
+    virtual bool IsForBrowser()
     {
       return mIsForBrowser;
     }
@@ -206,7 +204,7 @@ public:
      */
     void KillHard();
 
-    uint64_t ChildID() MOZ_OVERRIDE { return mChildID; }
+    uint64_t ChildID() { return mChildID; }
     const nsString& AppManifestURL() const { return mAppManifestURL; }
 
     bool IsPreallocated();
@@ -254,12 +252,11 @@ public:
         return PContentParent::RecvPStorageConstructor(aActor);
     }
 
-    virtual PJavaScriptParent*
-    AllocPJavaScriptParent() MOZ_OVERRIDE;
+    virtual jsipc::PJavaScriptParent*
+    AllocPJavaScriptParent();
     virtual bool
-    RecvPJavaScriptConstructor(PJavaScriptParent* aActor) MOZ_OVERRIDE {
-        return PContentParent::RecvPJavaScriptConstructor(aActor);
-    }
+    RecvPJavaScriptConstructor(jsipc::PJavaScriptParent* aActor);
+
     virtual PRemoteSpellcheckEngineParent* AllocPRemoteSpellcheckEngineParent() MOZ_OVERRIDE;
 
     virtual bool RecvRecordingDeviceEvents(const nsString& aRecordingStatus,
@@ -273,7 +270,7 @@ public:
 
     virtual PBlobParent* SendPBlobConstructor(
         PBlobParent* aActor,
-        const BlobConstructorParams& aParams) MOZ_OVERRIDE;
+        const BlobConstructorParams& aParams);
 
 protected:
     void OnChannelConnected(int32_t pid) MOZ_OVERRIDE;
@@ -313,7 +310,7 @@ private:
         const uint32_t& chromeFlags,
         const uint64_t& aId,
         const bool& aIsForApp,
-        const bool& aIsForBrowser) MOZ_OVERRIDE;
+        const bool& aIsForBrowser);
     using PContentParent::SendPTestShellConstructor;
 
     // No more than one of !!aApp, aIsForBrowser, and aIsForPreallocated may be
@@ -406,15 +403,15 @@ private:
                                           bool* aIsForBrowser) MOZ_OVERRIDE;
     virtual bool RecvGetXPCOMProcessAttributes(bool* aIsOffline) MOZ_OVERRIDE;
 
-    virtual bool DeallocPJavaScriptParent(mozilla::jsipc::PJavaScriptParent*) MOZ_OVERRIDE;
+    virtual bool DeallocPJavaScriptParent(mozilla::jsipc::PJavaScriptParent*);
 
     virtual bool DeallocPRemoteSpellcheckEngineParent(PRemoteSpellcheckEngineParent*) MOZ_OVERRIDE;
     virtual PBrowserParent* AllocPBrowserParent(const IPCTabContext& aContext,
                                                 const uint32_t& aChromeFlags,
                                                 const uint64_t& aId,
                                                 const bool& aIsForApp,
-                                                const bool& aIsForBrowser) MOZ_OVERRIDE;
-    virtual bool DeallocPBrowserParent(PBrowserParent* frame) MOZ_OVERRIDE;
+                                                const bool& aIsForBrowser);
+    virtual bool DeallocPBrowserParent(PBrowserParent* frame);
 
     virtual PDeviceStorageRequestParent*
     AllocPDeviceStorageRequestParent(const DeviceStorageParams&) MOZ_OVERRIDE;
@@ -426,8 +423,8 @@ private:
     virtual bool
     DeallocPFileSystemRequestParent(PFileSystemRequestParent*) MOZ_OVERRIDE;
 
-    virtual PBlobParent* AllocPBlobParent(const BlobConstructorParams& aParams) MOZ_OVERRIDE;
-    virtual bool DeallocPBlobParent(PBlobParent*) MOZ_OVERRIDE;
+    virtual PBlobParent* AllocPBlobParent(const BlobConstructorParams& aParams);
+    virtual bool DeallocPBlobParent(PBlobParent*);
 
     virtual bool DeallocPCrashReporterParent(PCrashReporterParent* crashreporter) MOZ_OVERRIDE;
 
@@ -541,16 +538,16 @@ private:
                                  const ClonedMessageData& aData,
                                  const InfallibleTArray<CpowEntry>& aCpows,
                                  const IPC::Principal& aPrincipal,
-                                 InfallibleTArray<nsString>* aRetvals) MOZ_OVERRIDE;
+                                 InfallibleTArray<nsString>* aRetvals);
     virtual bool AnswerRpcMessage(const nsString& aMsg,
                                   const ClonedMessageData& aData,
                                   const InfallibleTArray<CpowEntry>& aCpows,
                                   const IPC::Principal& aPrincipal,
-                                  InfallibleTArray<nsString>* aRetvals) MOZ_OVERRIDE;
+                                  InfallibleTArray<nsString>* aRetvals);
     virtual bool RecvAsyncMessage(const nsString& aMsg,
                                   const ClonedMessageData& aData,
                                   const InfallibleTArray<CpowEntry>& aCpows,
-                                  const IPC::Principal& aPrincipal) MOZ_OVERRIDE;
+                                  const IPC::Principal& aPrincipal);
 
     virtual bool RecvFilePathUpdateNotify(const nsString& aType,
                                           const nsString& aStorageName,
@@ -694,6 +691,8 @@ private:
     nsConsoleService* GetConsoleService();
 
     nsDataHashtable<nsUint64HashKey, nsRefPtr<ParentIdleListener> > mIdleListeners;
+
+    nsRefPtr<ContentContentParent> mContentContent;
 
 #ifdef MOZ_X11
     // Dup of child's X socket, used to scope its resources to this

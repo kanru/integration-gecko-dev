@@ -10,7 +10,7 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/dom/ContentBridgeParent.h"
 #include "mozilla/dom/ipc/Blob.h"
-#include "mozilla/dom/nsIContentChild.h"
+#include "mozilla/dom/ContentContentChild.h"
 #include "mozilla/dom/PContentChild.h"
 #include "nsHashKeys.h"
 #include "nsIObserver.h"
@@ -51,7 +51,6 @@ class ClonedMessageData;
 class PFileDescriptorSetChild;
 
 class ContentChild : public PContentChild
-                   , public nsIContentChild
 {
     typedef mozilla::dom::ClonedMessageData ClonedMessageData;
     typedef mozilla::ipc::OptionalURIParams OptionalURIParams;
@@ -244,8 +243,8 @@ public:
                                     const bool& reset) MOZ_OVERRIDE;
     virtual bool RecvRegisterChromeItem(const ChromeRegistryItem& item) MOZ_OVERRIDE;
 
-    virtual mozilla::jsipc::PJavaScriptChild* AllocPJavaScriptChild() MOZ_OVERRIDE;
-    virtual bool DeallocPJavaScriptChild(mozilla::jsipc::PJavaScriptChild*) MOZ_OVERRIDE;
+    virtual mozilla::jsipc::PJavaScriptChild* AllocPJavaScriptChild();
+    virtual bool DeallocPJavaScriptChild(mozilla::jsipc::PJavaScriptChild*);
     virtual PRemoteSpellcheckEngineChild* AllocPRemoteSpellcheckEngineChild() MOZ_OVERRIDE;
     virtual bool DeallocPRemoteSpellcheckEngineChild(PRemoteSpellcheckEngineChild*) MOZ_OVERRIDE;
 
@@ -268,7 +267,7 @@ public:
     virtual bool RecvAsyncMessage(const nsString& aMsg,
                                   const ClonedMessageData& aData,
                                   const InfallibleTArray<CpowEntry>& aCpows,
-                                  const IPC::Principal& aPrincipal) MOZ_OVERRIDE;
+                                  const IPC::Principal& aPrincipal);
 
     virtual bool RecvGeolocationUpdate(const GeoPosition& somewhere) MOZ_OVERRIDE;
 
@@ -333,7 +332,7 @@ public:
 
     virtual PBlobChild*
     SendPBlobConstructor(PBlobChild* actor,
-                         const BlobConstructorParams& params) MOZ_OVERRIDE;
+                         const BlobConstructorParams& params);
 
     virtual PFileDescriptorSetChild*
     AllocPFileDescriptorSetChild(const FileDescriptor&) MOZ_OVERRIDE;
@@ -346,14 +345,14 @@ public:
                                          const uint32_t& chromeFlags,
                                          const uint64_t& aID,
                                          const bool& aIsForApp,
-                                         const bool& aIsForBrowser) MOZ_OVERRIDE;
+                                         const bool& aIsForBrowser);
 
     virtual bool RecvPBrowserConstructor(PBrowserChild* aCctor,
                                          const IPCTabContext& aContext,
                                          const uint32_t& aChromeFlags,
                                          const uint64_t& aID,
                                          const bool& aIsForApp,
-                                         const bool& aIsForBrowser) MOZ_OVERRIDE;
+                                         const bool& aIsForBrowser);
 
 private:
     virtual void ActorDestroy(ActorDestroyReason why) MOZ_OVERRIDE;
@@ -392,6 +391,7 @@ private:
     nsString mProcessName;
 
     static ContentChild* sSingleton;
+    nsRefPtr<ContentContentChild> mContentContent;
 
     DISALLOW_EVIL_CONSTRUCTORS(ContentChild);
 };

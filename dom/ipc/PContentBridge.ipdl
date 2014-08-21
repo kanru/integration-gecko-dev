@@ -4,16 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-include protocol PBlob;
-include protocol PBrowser;
 include protocol PContent;
-include protocol PJavaScript;
-
-include DOMTypes;
-include JavaScriptTypes;
-include PTabContext;
-
-using class IPC::Principal from "mozilla/dom/PermissionMessageUtils.h";
+include protocol PContentContent;
 
 namespace mozilla {
 namespace dom {
@@ -28,28 +20,12 @@ namespace dom {
  */
 intr protocol PContentBridge
 {
-    bridges PContent, PContent;
+  bridges PContent, PContent;
 
-    manages PBlob;
-    manages PBrowser;
-    manages PJavaScript;
+  manages PContentContent;
 
-parent:
-    sync SyncMessage(nsString aMessage, ClonedMessageData aData,
-                     CpowEntry[] aCpows, Principal aPrincipal)
-      returns (nsString[] retval);
-both:
-    // Both the parent and the child can construct the PBrowser.
-    // See the comment in PContent::PBrowser().
-    async PBrowser(IPCTabContext context, uint32_t chromeFlags,
-                   uint64_t id, bool isForApp, bool isForBrowser);
-
-    async PBlob(BlobConstructorParams params);
-
-    async PJavaScript();
-
-    AsyncMessage(nsString aMessage, ClonedMessageData aData,
-                 CpowEntry[] aCpows, Principal aPrincipal);
+child:
+  async PContentContent();
 };
 
 }

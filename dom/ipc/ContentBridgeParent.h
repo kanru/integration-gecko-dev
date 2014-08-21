@@ -8,20 +8,19 @@
 #define mozilla_dom_ContentBridgeParent_h
 
 #include "mozilla/dom/PContentBridgeParent.h"
-#include "mozilla/dom/nsIContentParent.h"
+#include "mozilla/dom/ContentContentParent.h"
 
 namespace mozilla {
 namespace dom {
 
 class ContentBridgeParent : public PContentBridgeParent
-                          , public nsIContentParent
 {
 public:
   explicit ContentBridgeParent(Transport* aTransport);
 
   NS_DECL_ISUPPORTS
 
-  virtual void ActorDestroy(ActorDestroyReason aWhy) MOZ_OVERRIDE;
+  virtual void ActorDestroy(ActorDestroyReason aWhy);
   void DeferredDestroy();
 
   static ContentBridgeParent*
@@ -29,7 +28,7 @@ public:
 
   virtual PBlobParent*
   SendPBlobConstructor(PBlobParent* actor,
-                       const BlobConstructorParams& params) MOZ_OVERRIDE;
+                       const BlobConstructorParams& params);
 
   virtual PBrowserParent*
   SendPBrowserConstructor(PBrowserParent* aActor,
@@ -37,19 +36,19 @@ public:
                           const uint32_t& aChromeFlags,
                           const uint64_t& aID,
                           const bool& aIsForApp,
-                          const bool& aIsForBrowser) MOZ_OVERRIDE;
+                          const bool& aIsForBrowser);
 
   jsipc::JavaScriptParent* GetCPOWManager();
 
-  virtual uint64_t ChildID() MOZ_OVERRIDE
+  virtual uint64_t ChildID()
   {
     return mChildID;
   }
-  virtual bool IsForApp() MOZ_OVERRIDE
+  virtual bool IsForApp()
   {
     return mIsForApp;
   }
-  virtual bool IsForBrowser() MOZ_OVERRIDE
+  virtual bool IsForBrowser()
   {
     return mIsForBrowser;
   }
@@ -75,33 +74,34 @@ protected:
                                const ClonedMessageData& aData,
                                const InfallibleTArray<jsipc::CpowEntry>& aCpows,
                                const IPC::Principal& aPrincipal,
-                               InfallibleTArray<nsString>* aRetvals) MOZ_OVERRIDE;
+                               InfallibleTArray<nsString>* aRetvals);
   virtual bool RecvAsyncMessage(const nsString& aMsg,
                                 const ClonedMessageData& aData,
                                 const InfallibleTArray<jsipc::CpowEntry>& aCpows,
-                                const IPC::Principal& aPrincipal) MOZ_OVERRIDE;
+                                const IPC::Principal& aPrincipal);
 
-  virtual jsipc::PJavaScriptParent* AllocPJavaScriptParent() MOZ_OVERRIDE;
+  virtual jsipc::PJavaScriptParent* AllocPJavaScriptParent();
   virtual bool
-  DeallocPJavaScriptParent(jsipc::PJavaScriptParent*) MOZ_OVERRIDE;
+  DeallocPJavaScriptParent(jsipc::PJavaScriptParent*);
 
   virtual PBrowserParent*
   AllocPBrowserParent(const IPCTabContext &aContext,
                       const uint32_t& aChromeFlags,
                       const uint64_t& aID,
                       const bool& aIsForApp,
-                      const bool& aIsForBrowser) MOZ_OVERRIDE;
-  virtual bool DeallocPBrowserParent(PBrowserParent*) MOZ_OVERRIDE;
+                      const bool& aIsForBrowser);
+  virtual bool DeallocPBrowserParent(PBrowserParent*);
 
   virtual PBlobParent*
-  AllocPBlobParent(const BlobConstructorParams& aParams) MOZ_OVERRIDE;
+  AllocPBlobParent(const BlobConstructorParams& aParams);
 
-  virtual bool DeallocPBlobParent(PBlobParent*) MOZ_OVERRIDE;
+  virtual bool DeallocPBlobParent(PBlobParent*);
 
   DISALLOW_EVIL_CONSTRUCTORS(ContentBridgeParent);
 
 protected: // members
   nsRefPtr<ContentBridgeParent> mSelfRef;
+  nsRefPtr<ContentContentParent> mContentContent;
   Transport* mTransport; // owned
   uint64_t mChildID;
   bool mIsForApp;

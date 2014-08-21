@@ -8,13 +8,11 @@
 #define mozilla_dom_ContentBridgeChild_h
 
 #include "mozilla/dom/PContentBridgeChild.h"
-#include "mozilla/dom/nsIContentChild.h"
 
 namespace mozilla {
 namespace dom {
 
 class ContentBridgeChild MOZ_FINAL : public PContentBridgeChild
-                                   , public nsIContentChild
 {
 public:
   ContentBridgeChild(Transport* aTransport);
@@ -71,6 +69,7 @@ protected:
 
 protected: // members
   nsRefPtr<ContentBridgeChild> mSelfRef;
+  nsRefPtr<ContentContentChild> mContentContent;
   Transport* mTransport; // owned
 };
 

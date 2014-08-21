@@ -20,6 +20,7 @@ namespace dom {
 
 class nsIContentChild;
 class nsIContentParent;
+class ContentContentParent;
 class PBlobStreamChild;
 class PBlobStreamParent;
 
@@ -62,8 +63,6 @@ public:
   // Use this for non-file blobs.
   bool
   SetMysteryBlobInfo(const nsString& aContentType, uint64_t aLength);
-
-  nsIContentChild* Manager();
 
 private:
   // This constructor is called on the sending side.
@@ -152,7 +151,7 @@ public:
   bool
   SetMysteryBlobInfo(const nsString& aContentType, uint64_t aLength);
 
-  nsIContentParent* Manager();
+  ContentContentParent* Manager();
 
 private:
   // This constructor is called on the sending side.
