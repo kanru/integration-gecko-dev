@@ -104,7 +104,8 @@ public:
      * 3. normal iframe
      */
     static already_AddRefed<ContentParent>
-    GetNewOrUsedBrowserProcess(bool aForBrowserElement = false,
+    GetNewOrUsedBrowserProcess(mozIApplication* aContainingApp = nullptr,
+                               bool aForBrowserElement = false,
                                hal::ProcessPriority aPriority =
                                hal::ProcessPriority::PROCESS_PRIORITY_FOREGROUND,
                                ContentParent* aOpener = nullptr);
@@ -321,9 +322,7 @@ private:
         const bool& aIsForBrowser) MOZ_OVERRIDE;
     using PContentParent::SendPTestShellConstructor;
 
-    // No more than one of !!aApp, aIsForBrowser, and aIsForPreallocated may be
-    // true.
-    ContentParent(mozIApplication* aApp,
+    ContentParent(mozIApplication* aOwnOrContainingApp,
                   ContentParent* aOpener,
                   bool aIsForBrowser,
                   bool aIsForPreallocated,
@@ -361,14 +360,10 @@ private:
     // unlikely that the process will be killed after this point.
     bool SetPriorityAndCheckIsAlive(hal::ProcessPriority aPriority);
 
-    // Transform a pre-allocated app process into a "real" app
-    // process, for the specified manifest URL.
-    void TransformPreallocatedIntoApp(ContentParent* aOpener,
-                                      const nsAString& aAppManifestURL);
+    void TransformToApp(mozIApplication* aOwnApp, ContentParent* aOpener);
 
-    // Transform a pre-allocated app process into a browser process. If this
-    // returns false, the child process has died.
-    void TransformPreallocatedIntoBrowser(ContentParent* aOpener);
+    void TransformToBrowser(mozIApplication* aContainingApp,
+                            ContentParent* aOpener);
 
     /**
      * Mark this ContentParent as dead for the purposes of Get*().
