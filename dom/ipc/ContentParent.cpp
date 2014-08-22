@@ -615,7 +615,8 @@ ContentParent::GetNewOrPreallocatedAppProcess(mozIApplication* aApp,
                 NS_ERROR("Failed to get manifest URL");
                 return nullptr;
             }
-            process->TransformPreallocatedIntoApp(manifestURL);
+            process->TransformPreallocatedIntoApp(aOpener,
+                                                  manifestURL);
             if (aTookPreAllocated) {
                 *aTookPreAllocated = true;
             }
@@ -763,15 +764,9 @@ ContentParent::GetNewOrUsedBrowserProcess(bool aForBrowserElement,
     // Try to take and transform the preallocated process into browser.
     nsRefPtr<ContentParent> p = PreallocatedProcessManager::Take();
     if (p) {
-        p->TransformPreallocatedIntoBrowser();
+        p->TransformPreallocatedIntoBrowser(aOpener);
     } else {
       // Failed in using the preallocated process: fork from the chrome process.
-#ifdef MOZ_NUWA_PROCESS
-        if (Preferences::GetBool("dom.ipc.processPrelaunch.enabled", false)) {
-            // Wait until the Nuwa process forks a new process.
-            return nullptr;
-        }
-#endif
         p = new ContentParent(/* app = */ nullptr,
                               aOpener,
                               aForBrowserElement,
@@ -884,7 +879,10 @@ ContentParent::RecvCreateChildProcess(const IPCTabContext& aContext,
     }
 
     if (!cp) {
-        return false;
+        *aId = 0;
+        *aIsForApp = false;
+        *aIsForBrowser = false;
+        return true;
     }
 
     *aId = cp->ChildID();
@@ -934,13 +932,15 @@ ContentParent::CreateBrowserOrApp(const TabContext& aContext,
         nsRefPtr<nsIContentParent> constructorSender;
         if (isInContentProcess) {
             MOZ_ASSERT(aContext.IsBrowserElement());
-            constructorSender = CreateContentBridgeParent(aContext, initialPriority);
+            constructorSender =
+                CreateContentBridgeParent(aContext, initialPriority);
         } else {
           if (aOpenerContentParent) {
             constructorSender = aOpenerContentParent;
           } else {
-            constructorSender = GetNewOrUsedBrowserProcess(aContext.IsBrowserElement(),
-                                                                    initialPriority);
+            constructorSender =
+                GetNewOrUsedBrowserProcess(aContext.IsBrowserElement(),
+                                           initialPriority);
           }
         }
         if (constructorSender) {
@@ -1133,6 +1133,9 @@ ContentParent::CreateContentBridgeParent(const TabContext& aContext,
                                        &id,
                                        &isForApp,
                                        &isForBrowser)) {
+        return nullptr;
+    }
+    if (id == 0) {
         return nullptr;
     }
     if (!child->CallBridgeToChildProcess(id)) {
@@ -1369,9 +1372,11 @@ TryGetPropertiesFromManifestURL(const nsAString& aManifestURL,
 }
 
 void
-ContentParent::TransformPreallocatedIntoApp(const nsAString& aAppManifestURL)
+ContentParent::TransformPreallocatedIntoApp(ContentParent* aOpener,
+                                            const nsAString& aAppManifestURL)
 {
     MOZ_ASSERT(IsPreallocated());
+    mOpener = aOpener;
     mAppManifestURL = aAppManifestURL;
     TryGetPropertiesFromManifestURL(aAppManifestURL, mAppName, mOwnAppId);
     if (mOwnAppId == nsIScriptSecurityManager::NO_APP_ID && mOpener) {
@@ -1380,9 +1385,10 @@ ContentParent::TransformPreallocatedIntoApp(const nsAString& aAppManifestURL)
 }
 
 void
-ContentParent::TransformPreallocatedIntoBrowser()
+ContentParent::TransformPreallocatedIntoBrowser(ContentParent* aOpener)
 {
     // Reset mAppManifestURL, mIsForBrowser and mOSPrivileges for browser.
+    mOpener = aOpener;
     mAppManifestURL.Truncate();
     mIsForBrowser = true;
     if (mOpener) {
