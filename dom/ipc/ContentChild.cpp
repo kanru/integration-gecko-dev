@@ -140,7 +140,6 @@
 #endif
 
 #include "nsDOMFile.h"
-#include "nsIRemoteBlob.h"
 #include "ProcessUtils.h"
 #include "StructuredCloneUtils.h"
 #include "URIUtils.h"
@@ -660,6 +659,17 @@ ContentChild::AppendProcessId(nsACString& aName)
     aName.Append(nsPrintfCString("(pid %u)", pid));
 }
 
+ContentContentChild*
+ContentChild::ContentContent()
+{
+    if (!ManagedPContentContentChild().Length()) {
+        unused << SendPContentContentConstructor();
+    }
+
+    return static_cast<ContentContentChild*>(
+        ManagedPContentContentChild()[0]);
+}
+
 void
 ContentChild::InitXPCOM()
 {
@@ -1081,12 +1091,6 @@ ContentChild::DeallocPBrowserChild(PBrowserChild* aIframe)
     return nsIContentChild::DeallocPBrowserChild(aIframe);
 }
 
-PBlobChild*
-ContentChild::AllocPBlobChild(const BlobConstructorParams& aParams)
-{
-    return nsIContentChild::AllocPBlobChild(aParams);
-}
-
 mozilla::PRemoteSpellcheckEngineChild *
 ContentChild::AllocPRemoteSpellcheckEngineChild()
 {
@@ -1099,19 +1103,6 @@ ContentChild::DeallocPRemoteSpellcheckEngineChild(PRemoteSpellcheckEngineChild *
 {
     delete child;
     return true;
-}
-
-bool
-ContentChild::DeallocPBlobChild(PBlobChild* aActor)
-{
-    return nsIContentChild::DeallocPBlobChild(aActor);
-}
-
-PBlobChild*
-ContentChild::SendPBlobConstructor(PBlobChild* aActor,
-                                   const BlobConstructorParams& aParams)
-{
-    return PContentChild::SendPBlobConstructor(aActor, aParams);
 }
 
 PCrashReporterChild*

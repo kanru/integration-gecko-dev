@@ -11,9 +11,12 @@
 
 #include "nsISupports.h"
 
+class nsIDOMBlob;
+
 namespace mozilla {
 namespace dom {
 
+class BlobParent;
 class nsIContentParent;
 
 class ContentContentParent : public PContentContentParent
@@ -22,9 +25,15 @@ public:
   explicit ContentContentParent(nsIContentParent* aManager);
   virtual ~ContentContentParent();
 
+  BlobParent* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
+
   nsIContentParent* Manager();
 
 protected:
+  virtual PBlobParent*
+  AllocPBlobParent(const BlobConstructorParams&aParams) MOZ_OVERRIDE;
+  virtual bool DeallocPBlobParent(PBlobParent*) MOZ_OVERRIDE;
+
   virtual void ActorDestroy(ActorDestroyReason why) MOZ_OVERRIDE;
 private:
   nsIContentParent* mManager; // owned

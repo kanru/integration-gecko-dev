@@ -4,8 +4,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+include protocol PBlob;
 include protocol PContent;
 include protocol PContentBridge;
+
+include DOMTypes;
 
 namespace mozilla {
 namespace dom {
@@ -14,7 +17,11 @@ rpc protocol PContentContent
 {
   manager PContent or PContentBridge;
 
+  manages PBlob;
+
 both:
+  async PBlob(BlobConstructorParams params);
+
   async __delete__();
 };
 

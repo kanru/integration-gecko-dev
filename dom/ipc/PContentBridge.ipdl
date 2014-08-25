@@ -31,7 +31,6 @@ intr protocol PContentBridge
 {
     bridges PContent, PContent;
 
-    manages PBlob;
     manages PBrowser;
     manages PContentContent;
     manages PJavaScript;
@@ -48,8 +47,6 @@ both:
     // See the comment in PContent::PBrowser().
     async PBrowser(IPCTabContext context, uint32_t chromeFlags,
                    uint64_t id, bool isForApp, bool isForBrowser);
-
-    async PBlob(BlobConstructorParams params);
 
     async PJavaScript();
 

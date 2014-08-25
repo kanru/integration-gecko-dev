@@ -1,3 +1,5 @@
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -18,22 +20,21 @@ template <class> class nsRevocableEventPtr;
 namespace mozilla {
 namespace dom {
 
-class nsIContentChild;
-class nsIContentParent;
+class ContentContentChild;
+class ContentContentParent;
 class PBlobStreamChild;
 class PBlobStreamParent;
 
 class BlobChild MOZ_FINAL
   : public PBlobChild
 {
-  friend class nsIContentChild;
+  friend class ContentContentChild;
 
   class RemoteBlob;
   friend class RemoteBlob;
 
   nsIDOMBlob* mBlob;
   RemoteBlob* mRemoteBlob;
-  nsRefPtr<nsIContentChild> mStrongManager;
 
   bool mOwnsBlob;
   bool mBlobIsFile;
@@ -41,9 +42,9 @@ class BlobChild MOZ_FINAL
 public:
   // This create function is called on the sending side.
   static BlobChild*
-  Create(nsIContentChild* aManager, nsIDOMBlob* aBlob)
+  Create(nsIDOMBlob* aBlob)
   {
-    return new BlobChild(aManager, aBlob);
+    return new BlobChild(aBlob);
   }
 
   // Get the blob associated with this actor. This may always be called on the
@@ -63,21 +64,21 @@ public:
   bool
   SetMysteryBlobInfo(const nsString& aContentType, uint64_t aLength);
 
-  nsIContentChild* Manager();
+  ContentContentChild* Manager();
 
 private:
   // This constructor is called on the sending side.
-  BlobChild(nsIContentChild* aManager, nsIDOMBlob* aBlob);
+  BlobChild(nsIDOMBlob* aBlob);
 
   // This constructor is called on the receiving side.
-  BlobChild(nsIContentChild* aManager, const ChildBlobConstructorParams& aParams);
+  BlobChild(const ChildBlobConstructorParams& aParams);
 
   // Only destroyed by ContentChild.
   ~BlobChild();
 
   // This create function is called on the receiving side by ContentChild.
   static BlobChild*
-  Create(nsIContentChild* aManager, const ChildBlobConstructorParams& aParams);
+  Create(const ChildBlobConstructorParams& aParams);
 
   static already_AddRefed<RemoteBlob>
   CreateRemoteBlob(const ChildBlobConstructorParams& aParams);
@@ -105,7 +106,7 @@ private:
 class BlobParent MOZ_FINAL
   : public PBlobParent
 {
-  friend class nsIContentParent;
+  friend class ContentContentParent;
 
   class OpenStreamRunnable;
   friend class OpenStreamRunnable;
@@ -115,7 +116,6 @@ class BlobParent MOZ_FINAL
 
   nsIDOMBlob* mBlob;
   RemoteBlob* mRemoteBlob;
-  nsRefPtr<nsIContentParent> mStrongManager;
 
   // nsIInputStreams backed by files must ensure that the files are actually
   // opened and closed on a background thread before we can send their file
@@ -132,9 +132,9 @@ class BlobParent MOZ_FINAL
 public:
   // This create function is called on the sending side.
   static BlobParent*
-  Create(nsIContentParent* aManager, nsIDOMBlob* aBlob)
+  Create(nsIDOMBlob* aBlob)
   {
-    return new BlobParent(aManager, aBlob);
+    return new BlobParent(aBlob);
   }
 
   // Get the blob associated with this actor. This may always be called on the
@@ -152,21 +152,19 @@ public:
   bool
   SetMysteryBlobInfo(const nsString& aContentType, uint64_t aLength);
 
-  nsIContentParent* Manager();
+  ContentContentParent* Manager();
 
 private:
   // This constructor is called on the sending side.
-  BlobParent(nsIContentParent* aManager, nsIDOMBlob* aBlob);
+  BlobParent(nsIDOMBlob* aBlob);
 
   // This constructor is called on the receiving side.
-  BlobParent(nsIContentParent* aManager,
-             const ParentBlobConstructorParams& aParams);
+  BlobParent(const ParentBlobConstructorParams& aParams);
 
   ~BlobParent();
 
   // This create function is called on the receiving side by ContentParent.
-  static BlobParent*
-  Create(nsIContentParent* aManager, const ParentBlobConstructorParams& aParams);
+  static BlobParent* Create(const ParentBlobConstructorParams& aParams);
 
   static already_AddRefed<RemoteBlob>
   CreateRemoteBlob(const ParentBlobConstructorParams& aParams);

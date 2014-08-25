@@ -29,6 +29,8 @@ public:
 
   explicit ContentBridgeChild(Transport* aTransport);
 
+  virtual ContentContentChild* ContentContent() MOZ_OVERRIDE;
+
   static ContentBridgeChild*
   Create(Transport* aTransport, ProcessId aOtherProcess);
 
@@ -39,10 +41,6 @@ public:
                                 const ClonedMessageData& aData,
                                 const InfallibleTArray<jsipc::CpowEntry>& aCpows,
                                 const IPC::Principal& aPrincipal) MOZ_OVERRIDE;
-
-  virtual PBlobChild*
-  SendPBlobConstructor(PBlobChild* actor,
-                       const BlobConstructorParams& params);
 
   jsipc::JavaScriptChild* GetCPOWManager();
 
@@ -74,9 +72,6 @@ protected:
 
   virtual mozilla::jsipc::PJavaScriptChild* AllocPJavaScriptChild() MOZ_OVERRIDE;
   virtual bool DeallocPJavaScriptChild(mozilla::jsipc::PJavaScriptChild*) MOZ_OVERRIDE;
-
-  virtual PBlobChild* AllocPBlobChild(const BlobConstructorParams& aParams) MOZ_OVERRIDE;
-  virtual bool DeallocPBlobChild(PBlobChild*) MOZ_OVERRIDE;
 
   DISALLOW_EVIL_CONSTRUCTORS(ContentBridgeChild);
 

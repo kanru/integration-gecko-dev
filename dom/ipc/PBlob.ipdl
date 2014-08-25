@@ -3,8 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 include protocol PBlobStream;
-include protocol PContent;
-include protocol PContentBridge;
+include protocol PContentContent;
 
 include DOMTypes;
 
@@ -19,7 +18,7 @@ union ResolveMysteryParams
 
 protocol PBlob
 {
-  manager PContent or PContentBridge;
+  manager PContentContent;
   manages PBlobStream;
 
 both:

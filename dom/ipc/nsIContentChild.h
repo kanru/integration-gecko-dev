@@ -31,17 +31,17 @@ class CpowEntry;
 
 namespace dom {
 class IPCTabContext;
+class ContentContentChild;
 
 class nsIContentChild : public nsISupports
 {
 public:
   NS_DECLARE_STATIC_IID_ACCESSOR(NS_ICONTENTCHILD_IID)
 
+  virtual ContentContentChild* ContentContent() = 0;
+
   BlobChild* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
 
-  virtual PBlobChild*
-  SendPBlobConstructor(PBlobChild* aActor,
-                       const BlobConstructorParams& params) = 0;
   virtual bool
   SendPBrowserConstructor(PBrowserChild* aActor,
                           const IPCTabContext& aContext,
@@ -60,9 +60,6 @@ protected:
                                             const bool& aIsForApp,
                                             const bool& aIsForBrowser);
   virtual bool DeallocPBrowserChild(PBrowserChild*);
-
-  virtual PBlobChild* AllocPBlobChild(const BlobConstructorParams& aParams);
-  virtual bool DeallocPBlobChild(PBlobChild*);
 
   virtual bool RecvAsyncMessage(const nsString& aMsg,
                                 const ClonedMessageData& aData,

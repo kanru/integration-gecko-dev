@@ -12,8 +12,8 @@
 #include "mozilla/DebugOnly.h"
 #include "mozilla/Monitor.h"
 #include "mozilla/unused.h"
-#include "mozilla/dom/nsIContentParent.h"
-#include "mozilla/dom/nsIContentChild.h"
+#include "mozilla/dom/ContentContentChild.h"
+#include "mozilla/dom/ContentContentParent.h"
 #include "mozilla/dom/PBlobStreamChild.h"
 #include "mozilla/dom/PBlobStreamParent.h"
 #include "mozilla/dom/PFileDescriptorSetParent.h"
@@ -657,7 +657,8 @@ private:
       PFileDescriptorSetParent* fdSet = nullptr;
 
       if (!fds.IsEmpty()) {
-        auto* manager = static_cast<ContentParent*>(mBlobActor->Manager());
+        auto* ccp = static_cast<ContentContentParent*>(mBlobActor->Manager());
+        nsRefPtr<ContentParent> manager = ccp->Manager()->AsContentParent();
         MOZ_ASSERT(manager);
 
         fdSet = manager->SendPFileDescriptorSetConstructor(fds[0]);
@@ -960,10 +961,7 @@ private:
     normalParams.contentType() = mContentType;
     normalParams.length() = mLength;
 
-    auto* manager = static_cast<ContentChild*>(mActor->Manager());
-    MOZ_ASSERT(manager);
-
-    BlobChild* newActor = BlobChild::Create(manager, normalParams);
+    BlobChild* newActor = BlobChild::Create(normalParams);
     MOZ_ASSERT(newActor);
 
     SlicedBlobConstructorParams slicedParams;
@@ -1063,15 +1061,13 @@ RemoteBlob::GetPBlob()
  * BlobChild
  ******************************************************************************/
 
-BlobChild::BlobChild(nsIContentChild* aManager, nsIDOMBlob* aBlob)
+BlobChild::BlobChild(nsIDOMBlob* aBlob)
   : mBlob(aBlob)
   , mRemoteBlob(nullptr)
-  , mStrongManager(aManager)
   , mOwnsBlob(true)
   , mBlobIsFile(false)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aManager);
   MOZ_ASSERT(aBlob);
 
   aBlob->AddRef();
@@ -1080,16 +1076,13 @@ BlobChild::BlobChild(nsIContentChild* aManager, nsIDOMBlob* aBlob)
   mBlobIsFile = !!file;
 }
 
-BlobChild::BlobChild(nsIContentChild* aManager,
-                     const ChildBlobConstructorParams& aParams)
+BlobChild::BlobChild(const ChildBlobConstructorParams& aParams)
   : mBlob(nullptr)
   , mRemoteBlob(nullptr)
-  , mStrongManager(aManager)
   , mOwnsBlob(false)
   , mBlobIsFile(false)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aManager);
 
   ChildBlobConstructorParams::Type paramsType = aParams.type();
 
@@ -1114,17 +1107,15 @@ BlobChild::~BlobChild()
 }
 
 BlobChild*
-BlobChild::Create(nsIContentChild* aManager,
-                  const ChildBlobConstructorParams& aParams)
+BlobChild::Create(const ChildBlobConstructorParams& aParams)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aManager);
 
   switch (aParams.type()) {
     case ChildBlobConstructorParams::TNormalBlobConstructorParams:
     case ChildBlobConstructorParams::TFileBlobConstructorParams:
     case ChildBlobConstructorParams::TMysteryBlobConstructorParams:
-      return new BlobChild(aManager, aParams);
+      return new BlobChild(aParams);
 
     case ChildBlobConstructorParams::TSlicedBlobConstructorParams: {
       const SlicedBlobConstructorParams& params =
@@ -1144,7 +1135,7 @@ BlobChild::Create(nsIContentChild* aManager,
                       getter_AddRefs(slice));
       NS_ENSURE_SUCCESS(rv, nullptr);
 
-      return new BlobChild(aManager, slice);
+      return new BlobChild(slice);
     }
 
     default:
@@ -1214,10 +1205,10 @@ BlobChild::SetMysteryBlobInfo(const nsString& aContentType, uint64_t aLength)
   return SendResolveMystery(params);
 }
 
-nsIContentChild*
+ContentContentChild*
 BlobChild::Manager()
 {
-  return mStrongManager;
+  return static_cast<ContentContentChild*>(PBlobChild::Manager());
 }
 
 already_AddRefed<BlobChild::RemoteBlob>
@@ -1303,7 +1294,6 @@ BlobChild::ActorDestroy(ActorDestroyReason aWhy)
     mBlob->Release();
   }
 
-  mStrongManager = nullptr;
 }
 
 PBlobStreamChild*
@@ -1670,10 +1660,7 @@ private:
     params.blobParams() = normalParams;
     params.optionalInputStreamParams() = void_t();
 
-    auto* manager = static_cast<ContentParent*>(mActor->Manager());
-    MOZ_ASSERT(manager);
-
-    BlobParent* newActor = BlobParent::Create(manager, params);
+    BlobParent* newActor = BlobParent::Create(params);
     MOZ_ASSERT(newActor);
 
     SlicedBlobConstructorParams slicedParams;
@@ -1786,15 +1773,13 @@ RemoteBlob::GetPBlob()
  * BlobParent
  ******************************************************************************/
 
-BlobParent::BlobParent(nsIContentParent* aManager, nsIDOMBlob* aBlob)
+BlobParent::BlobParent(nsIDOMBlob* aBlob)
   : mBlob(aBlob)
   , mRemoteBlob(nullptr)
-  , mStrongManager(aManager)
   , mOwnsBlob(true)
   , mBlobIsFile(false)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aManager);
   MOZ_ASSERT(aBlob);
 
   aBlob->AddRef();
@@ -1803,16 +1788,13 @@ BlobParent::BlobParent(nsIContentParent* aManager, nsIDOMBlob* aBlob)
   mBlobIsFile = !!file;
 }
 
-BlobParent::BlobParent(nsIContentParent* aManager,
-                       const ParentBlobConstructorParams& aParams)
+BlobParent::BlobParent(const ParentBlobConstructorParams& aParams)
   : mBlob(nullptr)
   , mRemoteBlob(nullptr)
-  , mStrongManager(aManager)
   , mOwnsBlob(false)
   , mBlobIsFile(false)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aManager);
 
   ChildBlobConstructorParams::Type paramsType = aParams.blobParams().type();
 
@@ -1838,11 +1820,9 @@ BlobParent::~BlobParent()
 }
 
 BlobParent*
-BlobParent::Create(nsIContentParent* aManager,
-                   const ParentBlobConstructorParams& aParams)
+BlobParent::Create(const ParentBlobConstructorParams& aParams)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aManager);
 
   const ChildBlobConstructorParams& blobParams = aParams.blobParams();
 
@@ -1855,7 +1835,7 @@ BlobParent::Create(nsIContentParent* aManager,
 
     case ChildBlobConstructorParams::TNormalBlobConstructorParams:
     case ChildBlobConstructorParams::TFileBlobConstructorParams:
-      return new BlobParent(aManager, aParams);
+      return new BlobParent(aParams);
 
     case ChildBlobConstructorParams::TSlicedBlobConstructorParams: {
       const SlicedBlobConstructorParams& params =
@@ -1875,7 +1855,7 @@ BlobParent::Create(nsIContentParent* aManager,
                       getter_AddRefs(slice));
       NS_ENSURE_SUCCESS(rv, nullptr);
 
-      return new BlobParent(aManager, slice);
+      return new BlobParent(slice);
     }
 
     default:
@@ -1945,10 +1925,10 @@ BlobParent::SetMysteryBlobInfo(const nsString& aContentType, uint64_t aLength)
   return SendResolveMystery(params);
 }
 
-nsIContentParent*
+ContentContentParent*
 BlobParent::Manager()
 {
-  return mStrongManager;
+  return static_cast<ContentContentParent*>(PBlobParent::Manager());
 }
 
 already_AddRefed<BlobParent::RemoteBlob>
@@ -2055,7 +2035,6 @@ BlobParent::ActorDestroy(ActorDestroyReason aWhy)
     mBlob->Release();
   }
 
-  mStrongManager = nullptr;
 }
 
 PBlobStreamParent*

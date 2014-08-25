@@ -33,6 +33,7 @@ class CpowEntry;
 namespace dom {
 class IPCTabContext;
 class ContentParent;
+class ContentContentParent;
 
 class nsIContentParent : public nsISupports
                        , public mozilla::dom::ipc::MessageManagerCallback
@@ -41,15 +42,14 @@ public:
   NS_DECLARE_STATIC_IID_ACCESSOR(NS_ICONTENTPARENT_IID)
 
   nsIContentParent();
+
+  virtual ContentContentParent* ContentContent() = 0;
+
   BlobParent* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
 
   virtual uint64_t ChildID() = 0;
   virtual bool IsForApp() = 0;
   virtual bool IsForBrowser() = 0;
-
-  virtual PBlobParent* SendPBlobConstructor(
-    PBlobParent* actor,
-    const BlobConstructorParams& params) NS_WARN_UNUSED_RESULT = 0;
 
   virtual PBrowserParent* SendPBrowserConstructor(
     PBrowserParent* actor,
@@ -77,9 +77,6 @@ protected: // IPDL methods
                                               const bool& aIsForApp,
                                               const bool& aIsForBrowser);
   virtual bool DeallocPBrowserParent(PBrowserParent* frame);
-
-  virtual PBlobParent* AllocPBlobParent(const BlobConstructorParams& aParams);
-  virtual bool DeallocPBlobParent(PBlobParent*);
 
   virtual bool RecvSyncMessage(const nsString& aMsg,
                                const ClonedMessageData& aData,

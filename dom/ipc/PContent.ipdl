@@ -298,7 +298,6 @@ intr protocol PContent
     child opens PBackground;
 
     manages PAsmJSCacheEntry;
-    manages PBlob;
     manages PBluetooth;
     manages PBrowser;
     manages PContentContent;
@@ -352,8 +351,6 @@ both:
     // Keep the last 3 attributes in sync with GetProcessAttributes!
     async PBrowser(IPCTabContext context, uint32_t chromeFlags,
                    uint64_t id, bool isForApp, bool isForBrowser);
-
-    async PBlob(BlobConstructorParams params);
 
     PFileDescriptorSet(FileDescriptor fd);
 

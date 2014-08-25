@@ -9,7 +9,6 @@
 
 #include "mozilla/Attributes.h"
 #include "mozilla/dom/ContentBridgeParent.h"
-#include "mozilla/dom/ipc/Blob.h"
 #include "mozilla/dom/nsIContentChild.h"
 #include "mozilla/dom/PContentChild.h"
 #include "nsHashKeys.h"
@@ -20,7 +19,6 @@
 
 
 struct ChromePackage;
-class nsIDOMBlob;
 class nsIObserver;
 struct ResourceMapping;
 struct OverrideMapping;
@@ -93,6 +91,8 @@ public:
         return mAppInfo;
     }
 
+    ContentContentChild* ContentContent();
+
     void SetProcessName(const nsAString& aName, bool aDontOverride = false);
     void GetProcessName(nsAString& aName);
     void GetProcessName(nsACString& aName);
@@ -146,9 +146,6 @@ public:
 
     virtual PFileSystemRequestChild* AllocPFileSystemRequestChild(const FileSystemParams&);
     virtual bool DeallocPFileSystemRequestChild(PFileSystemRequestChild*);
-
-    virtual PBlobChild* AllocPBlobChild(const BlobConstructorParams& aParams);
-    virtual bool DeallocPBlobChild(PBlobChild*);
 
     virtual PCrashReporterChild*
     AllocPCrashReporterChild(const mozilla::dom::NativeThreadId& id,
@@ -340,10 +337,6 @@ public:
 
     bool IsForApp() { return mIsForApp; }
     bool IsForBrowser() { return mIsForBrowser; }
-
-    virtual PBlobChild*
-    SendPBlobConstructor(PBlobChild* actor,
-                         const BlobConstructorParams& params) MOZ_OVERRIDE;
 
     virtual PFileDescriptorSetChild*
     AllocPFileDescriptorSetChild(const FileDescriptor&) MOZ_OVERRIDE;

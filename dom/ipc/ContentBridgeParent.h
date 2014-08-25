@@ -29,15 +29,13 @@ public:
 
   explicit ContentBridgeParent(Transport* aTransport);
 
+  virtual ContentContentParent* ContentContent() MOZ_OVERRIDE;
+
   virtual void ActorDestroy(ActorDestroyReason aWhy) MOZ_OVERRIDE;
   void DeferredDestroy();
 
   static ContentBridgeParent*
   Create(Transport* aTransport, ProcessId aOtherProcess);
-
-  virtual PBlobParent*
-  SendPBlobConstructor(PBlobParent* actor,
-                       const BlobConstructorParams& params) MOZ_OVERRIDE;
 
   virtual PBrowserParent*
   SendPBrowserConstructor(PBrowserParent* aActor,
@@ -103,11 +101,6 @@ protected:
                       const bool& aIsForApp,
                       const bool& aIsForBrowser) MOZ_OVERRIDE;
   virtual bool DeallocPBrowserParent(PBrowserParent*) MOZ_OVERRIDE;
-
-  virtual PBlobParent*
-  AllocPBlobParent(const BlobConstructorParams& aParams) MOZ_OVERRIDE;
-
-  virtual bool DeallocPBlobParent(PBlobParent*) MOZ_OVERRIDE;
 
   DISALLOW_EVIL_CONSTRUCTORS(ContentBridgeParent);
 

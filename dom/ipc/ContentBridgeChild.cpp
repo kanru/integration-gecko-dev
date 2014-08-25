@@ -10,8 +10,6 @@
 #include "mozilla/dom/ContentContentChild.h"
 #include "mozilla/dom/StructuredCloneUtils.h"
 #include "mozilla/dom/TabChild.h"
-#include "mozilla/dom/ipc/Blob.h"
-#include "mozilla/dom/ipc/nsIRemoteBlob.h"
 #include "mozilla/ipc/InputStreamUtils.h"
 #include "nsDOMFile.h"
 #include "JavaScriptChild.h"
@@ -23,7 +21,7 @@ using namespace mozilla::jsipc;
 namespace mozilla {
 namespace dom {
 
-NS_IMPL_ISUPPORTS(ContentBridgeChild, nsIContentChild)
+NS_IMPL_ISUPPORTS(ContentBridgeChild, ContentBridgeChild, nsIContentChild)
 
 ContentBridgeChild::ContentBridgeChild(Transport* aTransport)
   : mTransport(aTransport)
@@ -40,6 +38,13 @@ ContentBridgeChild::ActorDestroy(ActorDestroyReason aWhy)
   MessageLoop::current()->PostTask(
     FROM_HERE,
     NewRunnableMethod(this, &ContentBridgeChild::DeferredDestroy));
+}
+
+ContentContentChild*
+ContentBridgeChild::ContentContent()
+{
+    return static_cast<ContentContentChild*>(
+        ManagedPContentContentChild()[0]);
 }
 
 /*static*/ ContentBridgeChild*
@@ -73,13 +78,6 @@ ContentBridgeChild::RecvAsyncMessage(const nsString& aMsg,
                                      const IPC::Principal& aPrincipal)
 {
   return nsIContentChild::RecvAsyncMessage(aMsg, aData, aCpows, aPrincipal);
-}
-
-PBlobChild*
-ContentBridgeChild::SendPBlobConstructor(PBlobChild* actor,
-                                         const BlobConstructorParams& params)
-{
-  return PContentBridgeChild::SendPBlobConstructor(actor, params);
 }
 
 bool
@@ -172,18 +170,6 @@ ContentBridgeChild::RecvPBrowserConstructor(PBrowserChild* aActor,
                                                                aID,
                                                                aIsForApp,
                                                                aIsForBrowser);
-}
-
-PBlobChild*
-ContentBridgeChild::AllocPBlobChild(const BlobConstructorParams& aParams)
-{
-  return nsIContentChild::AllocPBlobChild(aParams);
-}
-
-bool
-ContentBridgeChild::DeallocPBlobChild(PBlobChild* aActor)
-{
-  return nsIContentChild::DeallocPBlobChild(aActor);
 }
 
 } // namespace dom

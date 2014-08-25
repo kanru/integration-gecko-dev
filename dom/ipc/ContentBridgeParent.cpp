@@ -18,7 +18,7 @@ using namespace mozilla::jsipc;
 namespace mozilla {
 namespace dom {
 
-NS_IMPL_ISUPPORTS(ContentBridgeParent, nsIContentParent)
+NS_IMPL_ISUPPORTS(ContentBridgeParent, ContentBridgeParent, nsIContentParent)
 
 ContentBridgeParent::ContentBridgeParent(Transport* aTransport)
   : mTransport(aTransport)
@@ -35,6 +35,13 @@ ContentBridgeParent::ActorDestroy(ActorDestroyReason aWhy)
   MessageLoop::current()->PostTask(
     FROM_HERE,
     NewRunnableMethod(this, &ContentBridgeParent::DeferredDestroy));
+}
+
+ContentContentParent*
+ContentBridgeParent::ContentContent()
+{
+    return static_cast<ContentContentParent*>(
+        ManagedPContentContentParent()[0]);
 }
 
 /*static*/ ContentBridgeParent*
@@ -95,13 +102,6 @@ ContentBridgeParent::RecvAsyncMessage(const nsString& aMsg,
   return nsIContentParent::RecvAsyncMessage(aMsg, aData, aCpows, aPrincipal);
 }
 
-PBlobParent*
-ContentBridgeParent::SendPBlobConstructor(PBlobParent* actor,
-                                          const BlobConstructorParams& params)
-{
-  return PContentBridgeParent::SendPBlobConstructor(actor, params);
-}
-
 PBrowserParent*
 ContentBridgeParent::SendPBrowserConstructor(PBrowserParent* aActor,
                                              const IPCTabContext& aContext,
@@ -116,18 +116,6 @@ ContentBridgeParent::SendPBrowserConstructor(PBrowserParent* aActor,
                                                        aID,
                                                        aIsForApp,
                                                        aIsForBrowser);
-}
-
-PBlobParent*
-ContentBridgeParent::AllocPBlobParent(const BlobConstructorParams& aParams)
-{
-  return nsIContentParent::AllocPBlobParent(aParams);
-}
-
-bool
-ContentBridgeParent::DeallocPBlobParent(PBlobParent* aActor)
-{
-  return nsIContentParent::DeallocPBlobParent(aActor);
 }
 
 mozilla::jsipc::PJavaScriptParent *

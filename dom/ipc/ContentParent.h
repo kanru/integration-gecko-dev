@@ -10,7 +10,6 @@
 #include "mozilla/dom/PContentParent.h"
 #include "mozilla/dom/nsIContentParent.h"
 #include "mozilla/ipc/GeckoChildProcessHost.h"
-#include "mozilla/dom/ipc/Blob.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/FileUtils.h"
 #include "mozilla/HalTypes.h"
@@ -30,10 +29,10 @@
 class mozIApplication;
 class nsConsoleService;
 class nsICycleCollectorLogSink;
-class nsIDOMBlob;
 class nsIDumpGCAndCCLogsCallback;
 class nsIMemoryReporter;
 class ParentIdleListener;
+class nsIDOMBlob;
 
 namespace mozilla {
 class PRemoteSpellcheckEngineParent;
@@ -65,6 +64,7 @@ class TabContext;
 class PFileDescriptorSetParent;
 class ContentBridgeParent;
 class ContentContentParent;
+class BlobParent;
 
 #define CONTENTPARENT_IID                                       \
     { 0x86d29e79, 0xc2fc, 0x4559,                               \
@@ -85,7 +85,9 @@ class ContentParent : public PContentParent
 public:
     NS_DECLARE_STATIC_IID_ACCESSOR(CONTENTPARENT_IID)
 
+    ContentContentParent* ContentContent();
     virtual bool IsContentParent() MOZ_OVERRIDE { return true; }
+
     /**
      * Start up the content-process machinery.  This might include
      * scheduling pre-launch tasks.
@@ -281,10 +283,6 @@ public:
                               nsICycleCollectorLogSink* aSink,
                               nsIDumpGCAndCCLogsCallback* aCallback);
 
-    virtual PBlobParent* SendPBlobConstructor(
-        PBlobParent* aActor,
-        const BlobConstructorParams& aParams) MOZ_OVERRIDE;
-
 protected:
     void OnChannelConnected(int32_t pid) MOZ_OVERRIDE;
     virtual void ActorDestroy(ActorDestroyReason why) MOZ_OVERRIDE;
@@ -435,9 +433,6 @@ private:
 
     virtual bool
     DeallocPFileSystemRequestParent(PFileSystemRequestParent*) MOZ_OVERRIDE;
-
-    virtual PBlobParent* AllocPBlobParent(const BlobConstructorParams& aParams) MOZ_OVERRIDE;
-    virtual bool DeallocPBlobParent(PBlobParent*) MOZ_OVERRIDE;
 
     virtual bool DeallocPCrashReporterParent(PCrashReporterParent* crashreporter) MOZ_OVERRIDE;
 

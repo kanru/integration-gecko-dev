@@ -97,7 +97,6 @@
 #include "nsIMutable.h"
 #include "nsIObserverService.h"
 #include "nsIPresShell.h"
-#include "nsIRemoteBlob.h"
 #include "nsIScriptError.h"
 #include "nsISiteSecurityService.h"
 #include "nsIStyleSheet.h"
@@ -811,6 +810,17 @@ ContentParent::GetInitialProcessPriority(Element* aFrameElement)
     return browserFrame->GetIsExpectingSystemMessage() ?
                PROCESS_PRIORITY_FOREGROUND_HIGH :
                PROCESS_PRIORITY_FOREGROUND;
+}
+
+ContentContentParent*
+ContentParent::ContentContent()
+{
+    if (!ManagedPContentContentParent().Length()) {
+        unused << SendPContentContentConstructor();
+    }
+
+    return static_cast<ContentContentParent*>(
+        ManagedPContentContentParent()[0]);
 }
 
 bool
@@ -2788,19 +2798,6 @@ ContentParent::DeallocPFileSystemRequestParent(PFileSystemRequestParent* doomed)
     return true;
 }
 
-PBlobParent*
-ContentParent::AllocPBlobParent(const BlobConstructorParams& aParams)
-{
-    return nsIContentParent::AllocPBlobParent(aParams);
-}
-
-bool
-ContentParent::DeallocPBlobParent(PBlobParent* aActor)
-{
-    delete aActor;
-    return true;
-}
-
 mozilla::PRemoteSpellcheckEngineParent *
 ContentParent::AllocPRemoteSpellcheckEngineParent()
 {
@@ -3654,13 +3651,6 @@ bool
 ContentParent::CheckAppHasStatus(unsigned short aStatus)
 {
     return AssertAppHasStatus(this, aStatus);
-}
-
-PBlobParent*
-ContentParent::SendPBlobConstructor(PBlobParent* aActor,
-                                    const BlobConstructorParams& aParams)
-{
-    return PContentParent::SendPBlobConstructor(aActor, aParams);
 }
 
 bool
