@@ -45,8 +45,6 @@ public:
                           const bool& aIsForApp,
                           const bool& aIsForBrowser) MOZ_OVERRIDE;
 
-  jsipc::JavaScriptParent* GetCPOWManager();
-
   virtual uint64_t ChildID() MOZ_OVERRIDE
   {
     return mChildID;
@@ -89,10 +87,6 @@ protected:
                                 const ClonedMessageData& aData,
                                 const InfallibleTArray<jsipc::CpowEntry>& aCpows,
                                 const IPC::Principal& aPrincipal) MOZ_OVERRIDE;
-
-  virtual jsipc::PJavaScriptParent* AllocPJavaScriptParent() MOZ_OVERRIDE;
-  virtual bool
-  DeallocPJavaScriptParent(jsipc::PJavaScriptParent*) MOZ_OVERRIDE;
 
   virtual PBrowserParent*
   AllocPBrowserParent(const IPCTabContext &aContext,

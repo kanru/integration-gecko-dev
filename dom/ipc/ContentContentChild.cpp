@@ -11,6 +11,9 @@
 #include "mozilla/dom/ipc/Blob.h"
 #include "mozilla/dom/ipc/nsIRemoteBlob.h"
 
+#include "JavaScriptChild.h"
+#include "nsIJSRuntimeService.h"
+
 namespace mozilla {
 namespace dom {
 
@@ -111,6 +114,17 @@ ContentContentChild::GetOrCreateActorForBlob(nsIDOMBlob* aBlob)
   return SendPBlobConstructor(actor, params) ? actor : nullptr;
 }
 
+jsipc::JavaScriptChild *
+ContentContentChild::GetCPOWManager()
+{
+  if (ManagedPJavaScriptChild().Length()) {
+    return static_cast<jsipc::JavaScriptChild*>(ManagedPJavaScriptChild()[0]);
+  }
+  jsipc::JavaScriptChild* actor =
+    static_cast<jsipc::JavaScriptChild*>(SendPJavaScriptConstructor());
+  return actor;
+}
+
 nsIContentChild*
 ContentContentChild::Manager()
 {
@@ -127,6 +141,31 @@ bool
 ContentContentChild::DeallocPBlobChild(PBlobChild* aActor)
 {
   delete aActor;
+  return true;
+}
+
+jsipc::PJavaScriptChild*
+ContentContentChild::AllocPJavaScriptChild()
+{
+  nsCOMPtr<nsIJSRuntimeService> svc =
+    do_GetService("@mozilla.org/js/xpc/RuntimeService;1");
+  NS_ENSURE_TRUE(svc, nullptr);
+
+  JSRuntime *rt;
+  svc->GetRuntime(&rt);
+  NS_ENSURE_TRUE(svc, nullptr);
+
+  nsAutoPtr<jsipc::JavaScriptChild> child(new jsipc::JavaScriptChild(rt));
+  if (!child->init()) {
+    return nullptr;
+  }
+  return child.forget();
+}
+
+bool
+ContentContentChild::DeallocPJavaScriptChild(jsipc::PJavaScriptChild* aChild)
+{
+  static_cast<jsipc::JavaScriptChild*>(aChild)->decref();
   return true;
 }
 

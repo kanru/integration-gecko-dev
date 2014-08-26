@@ -8,12 +8,10 @@
 
 #include "mozilla/dom/ContentContentParent.h"
 #include "mozilla/dom/TabParent.h"
-#include "JavaScriptParent.h"
 #include "nsXULAppAPI.h"
 
 using namespace base;
 using namespace mozilla::ipc;
-using namespace mozilla::jsipc;
 
 namespace mozilla {
 namespace dom {
@@ -40,8 +38,14 @@ ContentBridgeParent::ActorDestroy(ActorDestroyReason aWhy)
 ContentContentParent*
 ContentBridgeParent::ContentContent()
 {
+  if (ManagedPContentContentParent().Length()) {
     return static_cast<ContentContentParent*>(
-        ManagedPContentContentParent()[0]);
+      ManagedPContentContentParent()[0]);
+  }
+
+  ContentContentParent* actor =
+    static_cast<ContentContentParent*>(SendPContentContentConstructor());
+  return actor;
 }
 
 /*static*/ ContentBridgeParent*
@@ -118,18 +122,6 @@ ContentBridgeParent::SendPBrowserConstructor(PBrowserParent* aActor,
                                                        aIsForBrowser);
 }
 
-mozilla::jsipc::PJavaScriptParent *
-ContentBridgeParent::AllocPJavaScriptParent()
-{
-  return nsIContentParent::AllocPJavaScriptParent();
-}
-
-bool
-ContentBridgeParent::DeallocPJavaScriptParent(PJavaScriptParent *parent)
-{
-  return nsIContentParent::DeallocPJavaScriptParent(parent);
-}
-
 PBrowserParent*
 ContentBridgeParent::AllocPBrowserParent(const IPCTabContext &aContext,
                                          const uint32_t& aChromeFlags,
@@ -148,19 +140,6 @@ bool
 ContentBridgeParent::DeallocPBrowserParent(PBrowserParent* aParent)
 {
   return nsIContentParent::DeallocPBrowserParent(aParent);
-}
-
-// This implementation is identical to ContentParent::GetCPOWManager but we can't
-// move it to nsIContentParent because it calls ManagedPJavaScriptParent() which
-// only exists in PContentParent and PContentBridgeParent.
-jsipc::JavaScriptParent*
-ContentBridgeParent::GetCPOWManager()
-{
-  if (ManagedPJavaScriptParent().Length()) {
-    return static_cast<JavaScriptParent*>(ManagedPJavaScriptParent()[0]);
-  }
-  JavaScriptParent* actor = static_cast<JavaScriptParent*>(SendPJavaScriptConstructor());
-  return actor;
 }
 
 } // namespace dom

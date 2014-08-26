@@ -7,6 +7,7 @@
 include protocol PBlob;
 include protocol PContent;
 include protocol PContentBridge;
+include protocol PJavaScript;
 
 include DOMTypes;
 
@@ -18,9 +19,12 @@ rpc protocol PContentContent
   manager PContent or PContentBridge;
 
   manages PBlob;
+  manages PJavaScript;
 
 both:
   async PBlob(BlobConstructorParams params);
+
+  async PJavaScript();
 
   async __delete__();
 };

@@ -157,8 +157,6 @@ using namespace mozilla::system;
 #include "BluetoothService.h"
 #endif
 
-#include "JavaScriptParent.h"
-
 #include "mozilla/RemoteSpellCheckEngineParent.h"
 
 #ifdef MOZ_B2G_FM
@@ -196,7 +194,7 @@ using namespace mozilla::hal;
 using namespace mozilla::ipc;
 using namespace mozilla::layers;
 using namespace mozilla::net;
-using namespace mozilla::jsipc;
+using namespace mozilla::jsipc; // XXX
 using namespace mozilla::widget;
 
 #ifdef ENABLE_TESTS
@@ -815,12 +813,14 @@ ContentParent::GetInitialProcessPriority(Element* aFrameElement)
 ContentContentParent*
 ContentParent::ContentContent()
 {
-    if (!ManagedPContentContentParent().Length()) {
-        unused << SendPContentContentConstructor();
+    if (ManagedPContentContentParent().Length()) {
+        return static_cast<ContentContentParent*>(
+            ManagedPContentContentParent()[0]);
     }
 
-    return static_cast<ContentContentParent*>(
-        ManagedPContentContentParent()[0]);
+    ContentContentParent* actor =
+        static_cast<ContentContentParent*>(SendPContentContentConstructor());
+    return actor;
 }
 
 bool
@@ -1766,15 +1766,6 @@ ContentParent::NotifyTabDestroyed(PBrowserParent* aTab,
     }
 }
 
-jsipc::JavaScriptParent*
-ContentParent::GetCPOWManager()
-{
-    if (ManagedPJavaScriptParent().Length()) {
-        return static_cast<JavaScriptParent*>(ManagedPJavaScriptParent()[0]);
-    }
-    return nullptr;
-}
-
 TestShellParent*
 ContentParent::CreateTestShell()
 {
@@ -2070,8 +2061,6 @@ ContentParent::InitInternal(ProcessPriority aInitialPriority,
             unused << SendLoadAndRegisterSheet(uri, nsIStyleSheetService::AUTHOR_SHEET);
         }
     }
-
-    unused << SendPContentContentConstructor();
 
 #ifdef MOZ_CONTENT_SANDBOX
     bool shouldSandbox = true;
@@ -2726,19 +2715,6 @@ ContentParent::DeallocPContentContentParent(PContentContentParent* aParent)
 {
     delete aParent;
     return true;
-}
-
-mozilla::jsipc::PJavaScriptParent *
-ContentParent::AllocPJavaScriptParent()
-{
-    MOZ_ASSERT(!ManagedPJavaScriptParent().Length());
-    return nsIContentParent::AllocPJavaScriptParent();
-}
-
-bool
-ContentParent::DeallocPJavaScriptParent(PJavaScriptParent *parent)
-{
-    return nsIContentParent::DeallocPJavaScriptParent(parent);
 }
 
 PBrowserParent*

@@ -14,6 +14,13 @@
 class nsIDOMBlob;
 
 namespace mozilla {
+
+namespace jsipc {
+class PJavaScriptParent;
+class JavaScriptParent;
+class CpowEntry;
+} // namespace jsipc
+
 namespace dom {
 
 class BlobParent;
@@ -26,21 +33,30 @@ public:
   virtual ~ContentContentParent();
 
   BlobParent* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
+  jsipc::JavaScriptParent* GetCPOWManager();
 
   nsIContentParent* Manager();
+
+  virtual mozilla::ipc::IProtocol* CloneProtocol(
+    Channel* aChannel, ProtocolCloneContext* aCtx) MOZ_OVERRIDE;
 
 protected:
   virtual PBlobParent*
   AllocPBlobParent(const BlobConstructorParams&aParams) MOZ_OVERRIDE;
   virtual bool DeallocPBlobParent(PBlobParent*) MOZ_OVERRIDE;
 
+  virtual jsipc::PJavaScriptParent* AllocPJavaScriptParent() MOZ_OVERRIDE;
+  virtual bool DeallocPJavaScriptParent(jsipc::PJavaScriptParent*) MOZ_OVERRIDE;
+
   virtual void ActorDestroy(ActorDestroyReason why) MOZ_OVERRIDE;
 private:
   nsIContentParent* mManager; // owned
+
+  friend jsipc::JavaScriptParent;
 };
 
-} // dom
-} // mozilla
+} // namespace dom
+} // namespace mozilla
 
 
 #endif

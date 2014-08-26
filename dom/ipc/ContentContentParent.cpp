@@ -11,6 +11,9 @@
 #include "mozilla/dom/ipc/Blob.h"
 #include "mozilla/dom/ipc/nsIRemoteBlob.h"
 
+#include "JavaScriptParent.h"
+#include "nsIJSRuntimeService.h"
+
 namespace mozilla {
 namespace dom {
 
@@ -102,10 +105,35 @@ ContentContentParent::GetOrCreateActorForBlob(nsIDOMBlob* aBlob)
   return SendPBlobConstructor(actor, params) ? actor : nullptr;
 }
 
+jsipc::JavaScriptParent*
+ContentContentParent::GetCPOWManager()
+{
+  if (ManagedPJavaScriptParent().Length()) {
+    return static_cast<jsipc::JavaScriptParent*>(ManagedPJavaScriptParent()[0]);
+  }
+  jsipc::JavaScriptParent* actor =
+    static_cast<jsipc::JavaScriptParent*>(SendPJavaScriptConstructor());
+  return actor;
+}
+
 nsIContentParent*
 ContentContentParent::Manager()
 {
   return mManager;
+}
+
+
+mozilla::ipc::IProtocol*
+ContentContentParent::CloneProtocol(Channel* aChannel,
+                                    ProtocolCloneContext* aCtx)
+{
+  ContentParent *contentParent = aCtx->GetContentParent();
+  nsAutoPtr<PContentContentParent>
+    actor(contentParent->AllocPContentContentParent());
+  if (!actor || !contentParent->RecvPContentContentConstructor(actor)) {
+    return nullptr;
+  }
+  return actor.forget();
 }
 
 PBlobParent*
@@ -118,6 +146,31 @@ bool
 ContentContentParent::DeallocPBlobParent(PBlobParent* aActor)
 {
   delete aActor;
+  return true;
+}
+
+jsipc::PJavaScriptParent*
+ContentContentParent::AllocPJavaScriptParent()
+{
+  nsCOMPtr<nsIJSRuntimeService> svc =
+    do_GetService("@mozilla.org/js/xpc/RuntimeService;1");
+  NS_ENSURE_TRUE(svc, nullptr);
+
+  JSRuntime *rt;
+  svc->GetRuntime(&rt);
+  NS_ENSURE_TRUE(svc, nullptr);
+
+  nsAutoPtr<jsipc::JavaScriptParent> parent(new jsipc::JavaScriptParent(rt));
+  if (!parent->init()) {
+    return nullptr;
+  }
+  return parent.forget();
+}
+
+bool
+ContentContentParent::DeallocPJavaScriptParent(jsipc::PJavaScriptParent* aParent)
+{
+  static_cast<jsipc::JavaScriptParent*>(aParent)->decref();
   return true;
 }
 

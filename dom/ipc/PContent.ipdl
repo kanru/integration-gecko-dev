@@ -31,7 +31,6 @@ include protocol PSpeechSynthesis;
 include protocol PStorage;
 include protocol PTelephony;
 include protocol PTestShell;
-include protocol PJavaScript;
 include protocol PRemoteSpellcheckEngine;
 include DOMTypes;
 include JavaScriptTypes;
@@ -318,7 +317,6 @@ intr protocol PContent
     manages PStorage;
     manages PTelephony;
     manages PTestShell;
-    manages PJavaScript;
     manages PRemoteSpellcheckEngine;
 
 both:
@@ -471,8 +469,6 @@ parent:
                             ProcessPriority priority)
         returns (uint64_t id, bool isForApp, bool isForBrowser);
     intr BridgeToChildProcess(uint64_t id);
-
-    async PJavaScript();
 
     sync PRemoteSpellcheckEngine();
     PDeviceStorageRequest(DeviceStorageParams params);

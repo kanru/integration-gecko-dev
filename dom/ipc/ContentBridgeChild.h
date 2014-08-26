@@ -42,8 +42,6 @@ public:
                                 const InfallibleTArray<jsipc::CpowEntry>& aCpows,
                                 const IPC::Principal& aPrincipal) MOZ_OVERRIDE;
 
-  jsipc::JavaScriptChild* GetCPOWManager();
-
   virtual bool SendPBrowserConstructor(PBrowserChild* aActor,
                                        const IPCTabContext& aContext,
                                        const uint32_t& aChromeFlags,
@@ -69,9 +67,6 @@ protected:
                                        const uint64_t& aID,
                                        const bool& aIsForApp,
                                        const bool& aIsForBrowser) MOZ_OVERRIDE;
-
-  virtual mozilla::jsipc::PJavaScriptChild* AllocPJavaScriptChild() MOZ_OVERRIDE;
-  virtual bool DeallocPJavaScriptChild(mozilla::jsipc::PJavaScriptChild*) MOZ_OVERRIDE;
 
   DISALLOW_EVIL_CONSTRUCTORS(ContentBridgeChild);
 

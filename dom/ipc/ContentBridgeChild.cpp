@@ -12,11 +12,9 @@
 #include "mozilla/dom/TabChild.h"
 #include "mozilla/ipc/InputStreamUtils.h"
 #include "nsDOMFile.h"
-#include "JavaScriptChild.h"
 
 using namespace base;
 using namespace mozilla::ipc;
-using namespace mozilla::jsipc;
 
 namespace mozilla {
 namespace dom {
@@ -43,8 +41,14 @@ ContentBridgeChild::ActorDestroy(ActorDestroyReason aWhy)
 ContentContentChild*
 ContentBridgeChild::ContentContent()
 {
+  if (ManagedPContentContentChild().Length()) {
     return static_cast<ContentContentChild*>(
-        ManagedPContentContentChild()[0]);
+      ManagedPContentContentChild()[0]);
+  }
+
+  ContentContentChild* actor =
+    static_cast<ContentContentChild*>(SendPContentContentConstructor());
+  return actor;
 }
 
 /*static*/ ContentBridgeChild*
@@ -96,19 +100,6 @@ ContentBridgeChild::SendPBrowserConstructor(PBrowserChild* aActor,
                                                       aIsForBrowser);
 }
 
-// This implementation is identical to ContentChild::GetCPOWManager but we can't
-// move it to nsIContentChild because it calls ManagedPJavaScriptChild() which
-// only exists in PContentChild and PContentBridgeChild.
-jsipc::JavaScriptChild *
-ContentBridgeChild::GetCPOWManager()
-{
-  if (ManagedPJavaScriptChild().Length()) {
-    return static_cast<JavaScriptChild*>(ManagedPJavaScriptChild()[0]);
-  }
-  JavaScriptChild* actor = static_cast<JavaScriptChild*>(SendPJavaScriptConstructor());
-  return actor;
-}
-
 PContentContentChild*
 ContentBridgeChild::AllocPContentContentChild()
 {
@@ -122,18 +113,6 @@ ContentBridgeChild::DeallocPContentContentChild(PContentContentChild* aChild)
 {
   delete aChild;
   return true;
-}
-
-mozilla::jsipc::PJavaScriptChild *
-ContentBridgeChild::AllocPJavaScriptChild()
-{
-  return nsIContentChild::AllocPJavaScriptChild();
-}
-
-bool
-ContentBridgeChild::DeallocPJavaScriptChild(PJavaScriptChild *child)
-{
-  return nsIContentChild::DeallocPJavaScriptChild(child);
 }
 
 PBrowserChild*

@@ -43,11 +43,6 @@ class URIParams;
 class TestShellParent;
 } // namespace ipc
 
-namespace jsipc {
-class JavaScriptParent;
-class PJavaScriptParent;
-}
-
 namespace layers {
 class PCompositorParent;
 class PSharedBufferManagerParent;
@@ -175,7 +170,6 @@ public:
     TestShellParent* CreateTestShell();
     bool DestroyTestShell(TestShellParent* aTestShell);
     TestShellParent* GetTestShellSingleton();
-    jsipc::JavaScriptParent *GetCPOWManager();
 
     void ReportChildAlreadyBlocked();
     bool RequestRunToCompletion();
@@ -266,12 +260,6 @@ public:
         return PContentParent::RecvPStorageConstructor(aActor);
     }
 
-    virtual PJavaScriptParent*
-    AllocPJavaScriptParent() MOZ_OVERRIDE;
-    virtual bool
-    RecvPJavaScriptConstructor(PJavaScriptParent* aActor) MOZ_OVERRIDE {
-        return PContentParent::RecvPJavaScriptConstructor(aActor);
-    }
     virtual PRemoteSpellcheckEngineParent* AllocPRemoteSpellcheckEngineParent() MOZ_OVERRIDE;
 
     virtual bool RecvRecordingDeviceEvents(const nsString& aRecordingStatus,
@@ -413,8 +401,6 @@ private:
                                           bool* aIsForApp,
                                           bool* aIsForBrowser) MOZ_OVERRIDE;
     virtual bool RecvGetXPCOMProcessAttributes(bool* aIsOffline) MOZ_OVERRIDE;
-
-    virtual bool DeallocPJavaScriptParent(mozilla::jsipc::PJavaScriptParent*) MOZ_OVERRIDE;
 
     virtual bool DeallocPRemoteSpellcheckEngineParent(PRemoteSpellcheckEngineParent*) MOZ_OVERRIDE;
     virtual PBrowserParent* AllocPBrowserParent(const IPCTabContext& aContext,
@@ -694,6 +680,7 @@ private:
     bool mCalledKillHard;
 
     friend class CrashReporterParent;
+    friend class ContentContentParent;
 
     nsRefPtr<nsConsoleService>  mConsoleService;
     nsConsoleService* GetConsoleService();

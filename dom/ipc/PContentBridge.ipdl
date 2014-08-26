@@ -8,7 +8,6 @@ include protocol PBlob;
 include protocol PBrowser;
 include protocol PContent;
 include protocol PContentContent;
-include protocol PJavaScript;
 
 include DOMTypes;
 include JavaScriptTypes;
@@ -33,7 +32,6 @@ intr protocol PContentBridge
 
     manages PBrowser;
     manages PContentContent;
-    manages PJavaScript;
 
 both:
     async PContentContent();
@@ -47,8 +45,6 @@ both:
     // See the comment in PContent::PBrowser().
     async PBrowser(IPCTabContext context, uint32_t chromeFlags,
                    uint64_t id, bool isForApp, bool isForBrowser);
-
-    async PJavaScript();
 
     AsyncMessage(nsString aMessage, ClonedMessageData aData,
                  CpowEntry[] aCpows, Principal aPrincipal);

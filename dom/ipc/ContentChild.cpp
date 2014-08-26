@@ -167,7 +167,7 @@ using namespace mozilla::hal_sandbox;
 using namespace mozilla::ipc;
 using namespace mozilla::layers;
 using namespace mozilla::net;
-using namespace mozilla::jsipc;
+using namespace mozilla::jsipc;// XXX
 #if defined(MOZ_WIDGET_GONK)
 using namespace mozilla::system;
 #endif
@@ -662,12 +662,14 @@ ContentChild::AppendProcessId(nsACString& aName)
 ContentContentChild*
 ContentChild::ContentContent()
 {
-    if (!ManagedPContentContentChild().Length()) {
-        unused << SendPContentContentConstructor();
+    if (ManagedPContentContentChild().Length()) {
+        return static_cast<ContentContentChild*>(
+            ManagedPContentContentChild()[0]);
     }
 
-    return static_cast<ContentContentChild*>(
-        ManagedPContentContentChild()[0]);
+    ContentContentChild* actor =
+        static_cast<ContentContentChild*>(SendPContentContentConstructor());
+    return actor;
 }
 
 void
@@ -991,20 +993,6 @@ static void FirstIdle(void)
     ContentChild::GetSingleton()->SendFirstIdle();
 }
 
-mozilla::jsipc::PJavaScriptChild *
-ContentChild::AllocPJavaScriptChild()
-{
-    MOZ_ASSERT(!ManagedPJavaScriptChild().Length());
-
-    return nsIContentChild::AllocPJavaScriptChild();
-}
-
-bool
-ContentChild::DeallocPJavaScriptChild(PJavaScriptChild *aChild)
-{
-    return nsIContentChild::DeallocPJavaScriptChild(aChild);
-}
-
 PBrowserChild*
 ContentChild::AllocPBrowserChild(const IPCTabContext& aContext,
                                  const uint32_t& aChromeFlags,
@@ -1178,16 +1166,6 @@ ContentChild::DeallocPTestShellChild(PTestShellChild* shell)
 {
     delete shell;
     return true;
-}
-
-jsipc::JavaScriptChild *
-ContentChild::GetCPOWManager()
-{
-    if (ManagedPJavaScriptChild().Length()) {
-        return static_cast<JavaScriptChild*>(ManagedPJavaScriptChild()[0]);
-    }
-    JavaScriptChild* actor = static_cast<JavaScriptChild*>(SendPJavaScriptConstructor());
-    return actor;
 }
 
 bool

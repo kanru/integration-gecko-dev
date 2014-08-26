@@ -6,6 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "JavaScriptParent.h"
+#include "mozilla/dom/ContentContentParent.h"
 #include "mozilla/dom/ContentParent.h"
 #include "nsJSUtils.h"
 #include "jsfriendapi.h"
@@ -58,9 +59,10 @@ JavaScriptParent::trace(JSTracer *trc)
 mozilla::ipc::IProtocol*
 JavaScriptParent::CloneProtocol(Channel* aChannel, ProtocolCloneContext* aCtx)
 {
-    ContentParent *contentParent = aCtx->GetContentParent();
-    nsAutoPtr<PJavaScriptParent> actor(contentParent->AllocPJavaScriptParent());
-    if (!actor || !contentParent->RecvPJavaScriptConstructor(actor)) {
+    ContentParent* contentParent = aCtx->GetContentParent();
+    ContentContentParent* ccp = contentParent->ContentContent();
+    nsAutoPtr<PJavaScriptParent> actor(ccp->AllocPJavaScriptParent());
+    if (!actor || !ccp->RecvPJavaScriptConstructor(actor)) {
         return nullptr;
     }
     return actor.forget();

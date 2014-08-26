@@ -24,30 +24,6 @@ using namespace mozilla::jsipc;
 namespace mozilla {
 namespace dom {
 
-PJavaScriptChild*
-nsIContentChild::AllocPJavaScriptChild()
-{
-  nsCOMPtr<nsIJSRuntimeService> svc = do_GetService("@mozilla.org/js/xpc/RuntimeService;1");
-  NS_ENSURE_TRUE(svc, nullptr);
-
-  JSRuntime *rt;
-  svc->GetRuntime(&rt);
-  NS_ENSURE_TRUE(svc, nullptr);
-
-  nsAutoPtr<JavaScriptChild> child(new JavaScriptChild(rt));
-  if (!child->init()) {
-    return nullptr;
-  }
-  return child.forget();
-}
-
-bool
-nsIContentChild::DeallocPJavaScriptChild(PJavaScriptChild* aChild)
-{
-  static_cast<JavaScriptChild*>(aChild)->decref();
-  return true;
-}
-
 PBrowserChild*
 nsIContentChild::AllocPBrowserChild(const IPCTabContext& aContext,
                                     const uint32_t& aChromeFlags,
@@ -85,6 +61,12 @@ BlobChild*
 nsIContentChild::GetOrCreateActorForBlob(nsIDOMBlob* aBlob)
 {
   return ContentContent()->GetOrCreateActorForBlob(aBlob);
+}
+
+jsipc::JavaScriptChild*
+nsIContentChild::GetCPOWManager()
+{
+  return ContentContent()->GetCPOWManager();
 }
 
 bool

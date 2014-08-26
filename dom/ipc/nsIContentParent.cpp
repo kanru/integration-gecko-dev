@@ -17,12 +17,11 @@
 #include "mozilla/dom/ipc/nsIRemoteBlob.h"
 #include "mozilla/unused.h"
 
-#include "JavaScriptParent.h"
 #include "nsDOMFile.h"
 #include "nsFrameMessageManager.h"
-#include "nsIJSRuntimeService.h"
 #include "nsPrintfCString.h"
 
+// XXX
 using namespace mozilla::jsipc;
 
 namespace mozilla {
@@ -38,31 +37,6 @@ nsIContentParent::AsContentParent()
 {
   MOZ_ASSERT(IsContentParent());
   return static_cast<ContentParent*>(this);
-}
-
-PJavaScriptParent*
-nsIContentParent::AllocPJavaScriptParent()
-{
-  nsCOMPtr<nsIJSRuntimeService> svc =
-    do_GetService("@mozilla.org/js/xpc/RuntimeService;1");
-  NS_ENSURE_TRUE(svc, nullptr);
-
-  JSRuntime *rt;
-  svc->GetRuntime(&rt);
-  NS_ENSURE_TRUE(svc, nullptr);
-
-  nsAutoPtr<JavaScriptParent> parent(new JavaScriptParent(rt));
-  if (!parent->init()) {
-    return nullptr;
-  }
-  return parent.forget();
-}
-
-bool
-nsIContentParent::DeallocPJavaScriptParent(PJavaScriptParent* aParent)
-{
-  static_cast<JavaScriptParent*>(aParent)->decref();
-  return true;
 }
 
 bool
@@ -142,6 +116,12 @@ BlobParent*
 nsIContentParent::GetOrCreateActorForBlob(nsIDOMBlob* aBlob)
 {
   return ContentContent()->GetOrCreateActorForBlob(aBlob);
+}
+
+jsipc::JavaScriptParent*
+nsIContentParent::GetCPOWManager()
+{
+  return ContentContent()->GetCPOWManager();
 }
 
 bool

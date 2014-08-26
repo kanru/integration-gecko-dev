@@ -25,7 +25,6 @@ class Principal;
 namespace mozilla {
 
 namespace jsipc {
-class PJavaScriptParent;
 class JavaScriptParent;
 class CpowEntry;
 } // namespace jsipc
@@ -46,6 +45,7 @@ public:
   virtual ContentContentParent* ContentContent() = 0;
 
   BlobParent* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
+  jsipc::JavaScriptParent *GetCPOWManager();
 
   virtual uint64_t ChildID() = 0;
   virtual bool IsForApp() = 0;
@@ -59,8 +59,6 @@ public:
     const bool& aIsForApp,
     const bool& aIsForBrowser) NS_WARN_UNUSED_RESULT = 0;
 
-  virtual jsipc::JavaScriptParent *GetCPOWManager() = 0;
-
   virtual bool IsContentParent() { return false; }
   ContentParent* AsContentParent();
 
@@ -68,9 +66,6 @@ protected: // methods
   bool CanOpenBrowser(const IPCTabContext& aContext);
 
 protected: // IPDL methods
-  virtual mozilla::jsipc::PJavaScriptParent* AllocPJavaScriptParent();
-  virtual bool DeallocPJavaScriptParent(mozilla::jsipc::PJavaScriptParent*);
-
   virtual PBrowserParent* AllocPBrowserParent(const IPCTabContext& aContext,
                                               const uint32_t& aChromeFlags,
                                               const uint64_t& aId,

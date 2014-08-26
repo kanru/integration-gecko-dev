@@ -24,7 +24,6 @@ class Principal;
 namespace mozilla {
 
 namespace jsipc {
-class PJavaScriptChild;
 class JavaScriptChild;
 class CpowEntry;
 } // jsipc
@@ -41,6 +40,7 @@ public:
   virtual ContentContentChild* ContentContent() = 0;
 
   BlobChild* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
+  jsipc::JavaScriptChild* GetCPOWManager();
 
   virtual bool
   SendPBrowserConstructor(PBrowserChild* aActor,
@@ -49,11 +49,7 @@ public:
                           const uint64_t& aID,
                           const bool& aIsForApp,
                           const bool& aIsForBrowser) = 0;
-  virtual jsipc::JavaScriptChild* GetCPOWManager() = 0;
 protected:
-  virtual jsipc::PJavaScriptChild* AllocPJavaScriptChild();
-  virtual bool DeallocPJavaScriptChild(jsipc::PJavaScriptChild*);
-
   virtual PBrowserChild* AllocPBrowserChild(const IPCTabContext& aContext,
                                             const uint32_t& aChromeFlags,
                                             const uint64_t& aID,

@@ -14,6 +14,13 @@
 class nsIDOMBlob;
 
 namespace mozilla {
+
+namespace jsipc {
+class PJavaScriptChild;
+class JavaScriptChild;
+class CpowEntry;
+} // namespace jsipc
+
 namespace dom {
 
 class BlobChild;
@@ -26,6 +33,7 @@ public:
   virtual ~ContentContentChild();
 
   BlobChild* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
+  jsipc::JavaScriptChild* GetCPOWManager();
 
   nsIContentChild* Manager();
 
@@ -34,12 +42,15 @@ protected:
   AllocPBlobChild(const BlobConstructorParams& aParams) MOZ_OVERRIDE;
   virtual bool DeallocPBlobChild(PBlobChild*) MOZ_OVERRIDE;
 
+  virtual jsipc::PJavaScriptChild* AllocPJavaScriptChild() MOZ_OVERRIDE;
+  virtual bool DeallocPJavaScriptChild(jsipc::PJavaScriptChild*) MOZ_OVERRIDE;
+
 private:
   nsIContentChild* mManager; // owned
 };
 
-} // dom
-} // mozilla
+} // namespace dom
+} // namespace mozilla
 
 
 #endif
