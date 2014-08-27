@@ -984,81 +984,52 @@ ContentChild::RecvSpeakerManagerNotify()
     return false;
 }
 
-static CancelableTask* sFirstIdleTask;
+// static CancelableTask* sFirstIdleTask;
 
-static void FirstIdle(void)
-{
-    MOZ_ASSERT(sFirstIdleTask);
-    sFirstIdleTask = nullptr;
-    ContentChild::GetSingleton()->SendFirstIdle();
-}
+// static void FirstIdle(void)
+// {
+//     MOZ_ASSERT(sFirstIdleTask);
+//     sFirstIdleTask = nullptr;
+//     ContentChild::GetSingleton()->SendFirstIdle();
+// }
 
-PBrowserChild*
-ContentChild::AllocPBrowserChild(const IPCTabContext& aContext,
-                                 const uint32_t& aChromeFlags,
-                                 const uint64_t& aID,
-                                 const bool& aIsForApp,
-                                 const bool& aIsForBrowser)
-{
-    return nsIContentChild::AllocPBrowserChild(aContext,
-                                               aChromeFlags,
-                                               aID,
-                                               aIsForApp,
-                                               aIsForBrowser);
-}
+// // XXX
+// bool
+// ContentChild::RecvPBrowserConstructor(PBrowserChild* aActor,
+//                                       const IPCTabContext& aContext,
+//                                       const uint32_t& aChromeFlags,
+//                                       const uint64_t& aID,
+//                                       const bool& aIsForApp,
+//                                       const bool& aIsForBrowser)
+// {
+//     // This runs after AllocPBrowserChild() returns and the IPC machinery for this
+//     // PBrowserChild has been set up.
 
-bool
-ContentChild::SendPBrowserConstructor(PBrowserChild* aActor,
-                                      const IPCTabContext& aContext,
-                                      const uint32_t& aChromeFlags,
-                                      const uint64_t& aID,
-                                      const bool& aIsForApp,
-                                      const bool& aIsForBrowser)
-{
-    return PContentChild::SendPBrowserConstructor(aActor,
-                                                  aContext,
-                                                  aChromeFlags,
-                                                  aID,
-                                                  aIsForApp,
-                                                  aIsForBrowser);
-}
+//     nsCOMPtr<nsIObserverService> os = services::GetObserverService();
+//     if (os) {
+//         nsITabChild* tc =
+//             static_cast<nsITabChild*>(static_cast<TabChild*>(aActor));
+//         os->NotifyObservers(tc, "tab-child-created", nullptr);
+//     }
 
-bool
-ContentChild::RecvPBrowserConstructor(PBrowserChild* aActor,
-                                      const IPCTabContext& aContext,
-                                      const uint32_t& aChromeFlags,
-                                      const uint64_t& aID,
-                                      const bool& aIsForApp,
-                                      const bool& aIsForBrowser)
-{
-    // This runs after AllocPBrowserChild() returns and the IPC machinery for this
-    // PBrowserChild has been set up.
+//     static bool hasRunOnce = false;
+//     if (!hasRunOnce) {
+//         hasRunOnce = true;
 
-    nsCOMPtr<nsIObserverService> os = services::GetObserverService();
-    if (os) {
-        nsITabChild* tc =
-            static_cast<nsITabChild*>(static_cast<TabChild*>(aActor));
-        os->NotifyObservers(tc, "tab-child-created", nullptr);
-    }
+//         MOZ_ASSERT(!sFirstIdleTask);
+//         sFirstIdleTask = NewRunnableFunction(FirstIdle);
+//         MessageLoop::current()->PostIdleTask(FROM_HERE, sFirstIdleTask);
 
-    static bool hasRunOnce = false;
-    if (!hasRunOnce) {
-        hasRunOnce = true;
+//         // Redo InitProcessAttributes() when the app or browser is really
+//         // launching so the attributes will be correct.
+//         mID = aID;
+//         mIsForApp = aIsForApp;
+//         mIsForBrowser = aIsForBrowser;
+//         InitProcessAttributes();
+//     }
 
-        MOZ_ASSERT(!sFirstIdleTask);
-        sFirstIdleTask = NewRunnableFunction(FirstIdle);
-        MessageLoop::current()->PostIdleTask(FROM_HERE, sFirstIdleTask);
-
-        // Redo InitProcessAttributes() when the app or browser is really
-        // launching so the attributes will be correct.
-        mID = aID;
-        mIsForApp = aIsForApp;
-        mIsForBrowser = aIsForBrowser;
-        InitProcessAttributes();
-    }
-
-    return true;
-}
+//     return true;
+// }
 
 PFileDescriptorSetChild*
 ContentChild::AllocPFileDescriptorSetChild(const FileDescriptor& aFD)
@@ -1071,12 +1042,6 @@ ContentChild::DeallocPFileDescriptorSetChild(PFileDescriptorSetChild* aActor)
 {
     delete static_cast<FileDescriptorSetChild*>(aActor);
     return true;
-}
-
-bool
-ContentChild::DeallocPBrowserChild(PBrowserChild* aIframe)
-{
-    return nsIContentChild::DeallocPBrowserChild(aIframe);
 }
 
 mozilla::PRemoteSpellcheckEngineChild *
@@ -1435,9 +1400,9 @@ ContentChild::ActorDestroy(ActorDestroyReason why)
     QuickExit();
 #endif
 
-    if (sFirstIdleTask) {
-        sFirstIdleTask->Cancel();
-    }
+    // if (sFirstIdleTask) {
+    //     sFirstIdleTask->Cancel();
+    // }
 
     mAlertObservers.Clear();
 

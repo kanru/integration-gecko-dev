@@ -52,8 +52,9 @@ struct AutoCacheNativeKeyCommands;
 
 namespace dom {
 
-class TabChild;
 class ClonedMessageData;
+class ContentContentChild;
+class TabChild;
 class TabChildBase;
 
 class TabChildGlobal : public DOMEventTargetHelper,
@@ -259,7 +260,9 @@ public:
 
     /** Return a TabChild with the given attributes. */
     static already_AddRefed<TabChild>
-    Create(nsIContentChild* aManager, const TabContext& aContext, uint32_t aChromeFlags);
+    Create(ContentContentChild* aManager,
+           const TabContext& aContext,
+           uint32_t aChromeFlags);
 
     bool IsRootContentDocument();
 
@@ -448,7 +451,7 @@ public:
                                     const nsAString& aPath,
                                     nsICachedFileDescriptorListener* aCallback);
 
-    nsIContentChild* Manager() { return mManager; }
+    ContentContentChild* Manager() { return mManager; }
 
     bool GetUpdateHitRegion() { return mUpdateHitRegion; }
 
@@ -505,7 +508,7 @@ private:
      *
      * |aIsBrowserElement| indicates whether we're a browser (but not an app).
      */
-    TabChild(nsIContentChild* aManager, const TabContext& aContext, uint32_t aChromeFlags);
+    TabChild(ContentContentChild* aManager, const TabContext& aContext, uint32_t aChromeFlags);
 
     nsresult Init();
 
@@ -561,7 +564,7 @@ private:
     nsCOMPtr<nsIWidget> mWidget;
     nsCOMPtr<nsIURI> mLastURI;
     RenderFrameChild* mRemoteFrame;
-    nsRefPtr<nsIContentChild> mManager;
+    nsRefPtr<ContentContentChild> mManager;
     uint32_t mChromeFlags;
     uint64_t mLayersId;
     nsIntRect mOuterRect;

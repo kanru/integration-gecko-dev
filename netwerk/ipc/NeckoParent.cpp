@@ -20,6 +20,7 @@
 #include "mozilla/net/DNSRequestParent.h"
 #include "mozilla/net/RemoteOpenFileParent.h"
 #include "mozilla/net/ChannelDiverterParent.h"
+#include "mozilla/dom/ContentContentParent.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/TabParent.h"
 #include "mozilla/dom/network/TCPSocketParent.h"
@@ -106,7 +107,9 @@ NeckoParent::GetValidatedAppInfo(const SerializedLoadContext& aSerialized,
     }
   }
 
-  const InfallibleTArray<PBrowserParent*>& browsers = aContent->ManagedPBrowserParent();
+  nsRefPtr<ContentParent> cp = static_cast<ContentParent*>(aContent);
+  const InfallibleTArray<PBrowserParent*>& browsers =
+    cp->ContentContent()->ManagedPBrowserParent(); 
   for (uint32_t i = 0; i < browsers.Length(); i++) {
     nsRefPtr<TabParent> tabParent = static_cast<TabParent*>(browsers[i]);
     uint32_t appId = tabParent->OwnOrContainingAppId();
@@ -541,9 +544,10 @@ NeckoParent::AllocPRemoteOpenFileParent(const SerializedLoadContext& aSerialized
     bool haveValidBrowser = false;
     bool hasManage = false;
     nsCOMPtr<mozIApplication> mozApp;
-    for (uint32_t i = 0; i < Manager()->ManagedPBrowserParent().Length(); i++) {
+    nsRefPtr<ContentParent> cp = static_cast<ContentParent*>(Manager());
+    for (uint32_t i = 0; i < cp->ContentContent()->ManagedPBrowserParent().Length(); i++) {
       nsRefPtr<TabParent> tabParent =
-        static_cast<TabParent*>(Manager()->ManagedPBrowserParent()[i]);
+        static_cast<TabParent*>(Manager()->ContentContent()->ManagedPBrowserParent()[i]);
       uint32_t appId = tabParent->OwnOrContainingAppId();
       // Note: this enforces that SerializedLoadContext.appID is one of the apps
       // in the child process, but there's currently no way to verify the

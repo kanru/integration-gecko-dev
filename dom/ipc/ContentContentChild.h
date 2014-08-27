@@ -24,6 +24,7 @@ class CpowEntry;
 namespace dom {
 
 class BlobChild;
+class IPCTabContext;
 class nsIContentChild;
 
 class ContentContentChild : public PContentContentChild
@@ -31,6 +32,8 @@ class ContentContentChild : public PContentContentChild
 public:
   explicit ContentContentChild(nsIContentChild* aManager);
   virtual ~ContentContentChild();
+
+  NS_INLINE_DECL_REFCOUNTING(ContentContentChild)
 
   BlobChild* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
   jsipc::JavaScriptChild* GetCPOWManager();
@@ -41,6 +44,14 @@ protected:
   virtual PBlobChild*
   AllocPBlobChild(const BlobConstructorParams& aParams) MOZ_OVERRIDE;
   virtual bool DeallocPBlobChild(PBlobChild*) MOZ_OVERRIDE;
+
+  virtual PBrowserChild*
+  AllocPBrowserChild(const IPCTabContext& aContext,
+                     const uint32_t& aChromeFlags,
+                     const uint64_t& aID,
+                     const bool& aIsForApp,
+                     const bool& aIsForBrowser) MOZ_OVERRIDE;
+  virtual bool DeallocPBrowserChild(PBrowserChild*) MOZ_OVERRIDE;
 
   virtual jsipc::PJavaScriptChild* AllocPJavaScriptChild() MOZ_OVERRIDE;
   virtual bool DeallocPJavaScriptChild(jsipc::PJavaScriptChild*) MOZ_OVERRIDE;

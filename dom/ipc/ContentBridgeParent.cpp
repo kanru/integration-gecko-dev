@@ -106,41 +106,5 @@ ContentBridgeParent::RecvAsyncMessage(const nsString& aMsg,
   return nsIContentParent::RecvAsyncMessage(aMsg, aData, aCpows, aPrincipal);
 }
 
-PBrowserParent*
-ContentBridgeParent::SendPBrowserConstructor(PBrowserParent* aActor,
-                                             const IPCTabContext& aContext,
-                                             const uint32_t& aChromeFlags,
-                                             const uint64_t& aID,
-                                             const bool& aIsForApp,
-                                             const bool& aIsForBrowser)
-{
-  return PContentBridgeParent::SendPBrowserConstructor(aActor,
-                                                       aContext,
-                                                       aChromeFlags,
-                                                       aID,
-                                                       aIsForApp,
-                                                       aIsForBrowser);
-}
-
-PBrowserParent*
-ContentBridgeParent::AllocPBrowserParent(const IPCTabContext &aContext,
-                                         const uint32_t& aChromeFlags,
-                                         const uint64_t& aID,
-                                         const bool& aIsForApp,
-                                         const bool& aIsForBrowser)
-{
-  return nsIContentParent::AllocPBrowserParent(aContext,
-                                               aChromeFlags,
-                                               aID,
-                                               aIsForApp,
-                                               aIsForBrowser);
-}
-
-bool
-ContentBridgeParent::DeallocPBrowserParent(PBrowserParent* aParent)
-{
-  return nsIContentParent::DeallocPBrowserParent(aParent);
-}
-
 } // namespace dom
 } // namespace mozilla

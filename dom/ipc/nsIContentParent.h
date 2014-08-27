@@ -51,14 +51,6 @@ public:
   virtual bool IsForApp() = 0;
   virtual bool IsForBrowser() = 0;
 
-  virtual PBrowserParent* SendPBrowserConstructor(
-    PBrowserParent* actor,
-    const IPCTabContext& context,
-    const uint32_t& chromeFlags,
-    const uint64_t& aId,
-    const bool& aIsForApp,
-    const bool& aIsForBrowser) NS_WARN_UNUSED_RESULT = 0;
-
   virtual bool IsContentParent() { return false; }
   ContentParent* AsContentParent();
 
@@ -66,13 +58,6 @@ protected: // methods
   bool CanOpenBrowser(const IPCTabContext& aContext);
 
 protected: // IPDL methods
-  virtual PBrowserParent* AllocPBrowserParent(const IPCTabContext& aContext,
-                                              const uint32_t& aChromeFlags,
-                                              const uint64_t& aId,
-                                              const bool& aIsForApp,
-                                              const bool& aIsForBrowser);
-  virtual bool DeallocPBrowserParent(PBrowserParent* frame);
-
   virtual bool RecvSyncMessage(const nsString& aMsg,
                                const ClonedMessageData& aData,
                                const InfallibleTArray<jsipc::CpowEntry>& aCpows,

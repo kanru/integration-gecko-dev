@@ -8,6 +8,7 @@
 
 #include "mozilla/dom/ContentBridgeParent.h"
 #include "mozilla/dom/ContentParent.h"
+#include "mozilla/dom/TabParent.h"
 #include "mozilla/dom/ipc/Blob.h"
 #include "mozilla/dom/ipc/nsIRemoteBlob.h"
 
@@ -146,6 +147,39 @@ bool
 ContentContentParent::DeallocPBlobParent(PBlobParent* aActor)
 {
   delete aActor;
+  return true;
+}
+
+PBrowserParent*
+ContentContentParent::AllocPBrowserParent(const IPCTabContext& aContext,
+                                          const uint32_t& aChromeFlags,
+                                          const uint64_t& aId,
+                                          const bool& aIsForApp,
+                                          const bool& aIsForBrowser)
+{
+  unused << aChromeFlags;
+  unused << aId;
+  unused << aIsForApp;
+  unused << aIsForBrowser;
+
+  // if (!CanOpenBrowser(aContext)) {
+  //   return nullptr;
+  // }
+
+  MaybeInvalidTabContext tc(aContext);
+  MOZ_ASSERT(tc.IsValid());
+  TabParent* parent = new TabParent(this, tc.GetTabContext(), aChromeFlags);
+
+  // We release this ref in DeallocPBrowserParent()
+  NS_ADDREF(parent);
+  return parent;
+}
+
+bool
+ContentContentParent::DeallocPBrowserParent(PBrowserParent* aFrame)
+{
+  TabParent* parent = static_cast<TabParent*>(aFrame);
+  NS_RELEASE(parent);
   return true;
 }
 

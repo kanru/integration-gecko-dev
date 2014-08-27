@@ -5,13 +5,11 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 include protocol PBlob;
-include protocol PBrowser;
 include protocol PContent;
 include protocol PContentContent;
 
 include DOMTypes;
 include JavaScriptTypes;
-include PTabContext;
 
 using class IPC::Principal from "mozilla/dom/PermissionMessageUtils.h";
 
@@ -30,7 +28,6 @@ intr protocol PContentBridge
 {
     bridges PContent, PContent;
 
-    manages PBrowser;
     manages PContentContent;
 
 both:
@@ -41,10 +38,6 @@ parent:
                      CpowEntry[] aCpows, Principal aPrincipal)
       returns (nsString[] retval);
 both:
-    // Both the parent and the child can construct the PBrowser.
-    // See the comment in PContent::PBrowser().
-    async PBrowser(IPCTabContext context, uint32_t chromeFlags,
-                   uint64_t id, bool isForApp, bool isForBrowser);
 
     AsyncMessage(nsString aMessage, ClonedMessageData aData,
                  CpowEntry[] aCpows, Principal aPrincipal);

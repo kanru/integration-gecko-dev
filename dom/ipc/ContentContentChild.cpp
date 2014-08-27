@@ -8,11 +8,13 @@
 
 #include "mozilla/dom/ContentBridgeChild.h"
 #include "mozilla/dom/ContentChild.h"
+#include "mozilla/dom/TabChild.h"
 #include "mozilla/dom/ipc/Blob.h"
 #include "mozilla/dom/ipc/nsIRemoteBlob.h"
 
 #include "JavaScriptChild.h"
 #include "nsIJSRuntimeService.h"
+#include "nsPrintfCString.h"
 
 namespace mozilla {
 namespace dom {
@@ -141,6 +143,41 @@ bool
 ContentContentChild::DeallocPBlobChild(PBlobChild* aActor)
 {
   delete aActor;
+  return true;
+}
+
+PBrowserChild*
+ContentContentChild::AllocPBrowserChild(const IPCTabContext& aContext,
+                                        const uint32_t& aChromeFlags,
+                                        const uint64_t& aID,
+                                        const bool& aIsForApp,
+                                        const bool& aIsForBrowser)
+{
+  // We'll happily accept any kind of IPCTabContext here; we don't need to
+  // check that it's of a certain type for security purposes, because we
+  // believe whatever the parent process tells us.
+
+  MaybeInvalidTabContext tc(aContext);
+  if (!tc.IsValid()) {
+    NS_ERROR(nsPrintfCString("Received an invalid TabContext from "
+                             "the parent process. (%s)  Crashing...",
+                             tc.GetInvalidReason()).get());
+    MOZ_CRASH("Invalid TabContext received from the parent process.");
+  }
+
+  nsRefPtr<TabChild> child = TabChild::Create(this,
+                                              tc.GetTabContext(),
+                                              aChromeFlags);
+
+  // The ref here is released in DeallocPBrowserChild.
+  return child.forget().take();
+}
+
+bool
+ContentContentChild::DeallocPBrowserChild(PBrowserChild* aIframe)
+{
+  TabChild* child = static_cast<TabChild*>(aIframe);
+  NS_RELEASE(child);
   return true;
 }
 

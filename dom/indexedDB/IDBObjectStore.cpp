@@ -3094,7 +3094,7 @@ ObjectStoreHelper::Dispatch(nsIEventTarget* aDatabaseThread)
   if (rootActor->GetManagerContent()) {
     blobCreator = rootActor->GetManagerContent();
   } else {
-    blobCreator = rootActor->GetManagerTab()->Manager();
+    blobCreator = rootActor->GetManagerTab()->Manager()->Manager();
   }
 
   nsresult rv = PackArgumentsForParentProcess(params, blobCreator);

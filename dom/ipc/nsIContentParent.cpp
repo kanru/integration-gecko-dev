@@ -13,7 +13,6 @@
 #include "mozilla/dom/PTabContext.h"
 #include "mozilla/dom/PermissionMessageUtils.h"
 #include "mozilla/dom/StructuredCloneUtils.h"
-#include "mozilla/dom/TabParent.h"
 #include "mozilla/dom/ipc/nsIRemoteBlob.h"
 #include "mozilla/unused.h"
 
@@ -76,39 +75,6 @@ nsIContentParent::CanOpenBrowser(const IPCTabContext& aContext)
     return false;
   }
 
-  return true;
-}
-
-PBrowserParent*
-nsIContentParent::AllocPBrowserParent(const IPCTabContext& aContext,
-                                      const uint32_t& aChromeFlags,
-                                      const uint64_t& aId,
-                                      const bool& aIsForApp,
-                                      const bool& aIsForBrowser)
-{
-  unused << aChromeFlags;
-  unused << aId;
-  unused << aIsForApp;
-  unused << aIsForBrowser;
-
-  if (!CanOpenBrowser(aContext)) {
-    return nullptr;
-  }
-
-  MaybeInvalidTabContext tc(aContext);
-  MOZ_ASSERT(tc.IsValid());
-  TabParent* parent = new TabParent(this, tc.GetTabContext(), aChromeFlags);
-
-  // We release this ref in DeallocPBrowserParent()
-  NS_ADDREF(parent);
-  return parent;
-}
-
-bool
-nsIContentParent::DeallocPBrowserParent(PBrowserParent* aFrame)
-{
-  TabParent* parent = static_cast<TabParent*>(aFrame);
-  NS_RELEASE(parent);
   return true;
 }
 

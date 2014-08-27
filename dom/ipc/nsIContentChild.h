@@ -15,8 +15,6 @@
   { 0x4eed2e73, 0x94ba, 0x48a8,                                 \
     { 0xa2, 0xd1, 0xa5, 0xed, 0x86, 0xd7, 0xbb, 0xe4 } }
 
-class PBrowserChild;
-
 namespace IPC {
 class Principal;
 } // IPC
@@ -42,21 +40,7 @@ public:
   BlobChild* GetOrCreateActorForBlob(nsIDOMBlob* aBlob);
   jsipc::JavaScriptChild* GetCPOWManager();
 
-  virtual bool
-  SendPBrowserConstructor(PBrowserChild* aActor,
-                          const IPCTabContext& aContext,
-                          const uint32_t& aChromeFlags,
-                          const uint64_t& aID,
-                          const bool& aIsForApp,
-                          const bool& aIsForBrowser) = 0;
 protected:
-  virtual PBrowserChild* AllocPBrowserChild(const IPCTabContext& aContext,
-                                            const uint32_t& aChromeFlags,
-                                            const uint64_t& aID,
-                                            const bool& aIsForApp,
-                                            const bool& aIsForBrowser);
-  virtual bool DeallocPBrowserChild(PBrowserChild*);
-
   virtual bool RecvAsyncMessage(const nsString& aMsg,
                                 const ClonedMessageData& aData,
                                 const InfallibleTArray<jsipc::CpowEntry>& aCpows,

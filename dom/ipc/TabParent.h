@@ -43,8 +43,9 @@ class RenderFrameParent;
 namespace dom {
 
 class ClonedMessageData;
-class nsIContentParent;
+class ContentContentParent;
 class Element;
+class nsIContentParent;
 struct StructuredCloneData;
 
 class TabParent : public PBrowserParent 
@@ -63,7 +64,7 @@ public:
     // nsITabParent
     NS_DECL_NSITABPARENT
 
-    TabParent(nsIContentParent* aManager, const TabContext& aContext, uint32_t aChromeFlags);
+    TabParent(ContentContentParent* aManager, const TabContext& aContext, uint32_t aChromeFlags);
     Element* GetOwnerElement() const { return mFrameElement; }
     void SetOwnerElement(Element* aElement);
 
@@ -301,7 +302,7 @@ public:
     static TabParent* GetFrom(nsFrameLoader* aFrameLoader);
     static TabParent* GetFrom(nsIContent* aContent);
 
-    nsIContentParent* Manager() { return mManager; }
+    ContentContentParent* Manager() { return mManager; }
 
     /**
      * Let managees query if Destroy() is already called so they don't send out
@@ -385,7 +386,7 @@ protected:
 private:
     already_AddRefed<nsFrameLoader> GetFrameLoader() const;
     layout::RenderFrameParent* GetRenderFrame();
-    nsRefPtr<nsIContentParent> mManager;
+    nsRefPtr<ContentContentParent> mManager;
     void TryCacheDPIAndScale();
 
     CSSPoint AdjustTapToChildWidget(const CSSPoint& aPoint);

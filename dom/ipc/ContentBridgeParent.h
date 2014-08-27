@@ -37,14 +37,6 @@ public:
   static ContentBridgeParent*
   Create(Transport* aTransport, ProcessId aOtherProcess);
 
-  virtual PBrowserParent*
-  SendPBrowserConstructor(PBrowserParent* aActor,
-                          const IPCTabContext& aContext,
-                          const uint32_t& aChromeFlags,
-                          const uint64_t& aID,
-                          const bool& aIsForApp,
-                          const bool& aIsForBrowser) MOZ_OVERRIDE;
-
   virtual uint64_t ChildID() MOZ_OVERRIDE
   {
     return mChildID;
@@ -87,14 +79,6 @@ protected:
                                 const ClonedMessageData& aData,
                                 const InfallibleTArray<jsipc::CpowEntry>& aCpows,
                                 const IPC::Principal& aPrincipal) MOZ_OVERRIDE;
-
-  virtual PBrowserParent*
-  AllocPBrowserParent(const IPCTabContext &aContext,
-                      const uint32_t& aChromeFlags,
-                      const uint64_t& aID,
-                      const bool& aIsForApp,
-                      const bool& aIsForBrowser) MOZ_OVERRIDE;
-  virtual bool DeallocPBrowserParent(PBrowserParent*) MOZ_OVERRIDE;
 
   DISALLOW_EVIL_CONSTRUCTORS(ContentBridgeParent);
 

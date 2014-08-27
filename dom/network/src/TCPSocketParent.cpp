@@ -11,6 +11,7 @@
 #include "mozilla/AppProcessChecker.h"
 #include "mozilla/net/NeckoCommon.h"
 #include "mozilla/net/PNeckoParent.h"
+#include "mozilla/dom/ContentContentParent.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/TabParent.h"
@@ -96,8 +97,8 @@ TCPSocketParent::RecvOpen(const nsString& aHost, const uint16_t& aPort, const bo
 
   // Obtain App ID
   uint32_t appId = nsIScriptSecurityManager::NO_APP_ID;
-  const PContentParent *content = Manager()->Manager();
-  const InfallibleTArray<PBrowserParent*>& browsers = content->ManagedPBrowserParent();
+  auto* content = static_cast<ContentParent*>(Manager()->Manager());
+  const InfallibleTArray<PBrowserParent*>& browsers = content->ContentContent()->ManagedPBrowserParent();
   if (browsers.Length() > 0) {
     TabParent *tab = static_cast<TabParent*>(browsers[0]);
     appId = tab->OwnAppId();

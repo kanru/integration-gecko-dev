@@ -14,6 +14,7 @@
 #include "mozIApplication.h"
 #include "mozilla/BrowserElementParent.h"
 #include "mozilla/docshell/OfflineCacheUpdateParent.h"
+#include "mozilla/dom/ContentContentParent.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/PContentPermissionRequestParent.h"
 #include "mozilla/EventStateManager.h"
@@ -215,7 +216,7 @@ NS_IMPL_ISUPPORTS(TabParent,
                   nsISecureBrowserUI,
                   nsISupportsWeakReference)
 
-TabParent::TabParent(nsIContentParent* aManager, const TabContext& aContext, uint32_t aChromeFlags)
+TabParent::TabParent(ContentContentParent* aManager, const TabContext& aContext, uint32_t aChromeFlags)
   : TabContext(aContext)
   , mFrameElement(nullptr)
   , mIMESelectionAnchor(0)
@@ -310,7 +311,7 @@ TabParent::Destroy()
   mIsDestroyed = true;
 
   if (XRE_GetProcessType() == GeckoProcessType_Default) {
-    Manager()->AsContentParent()->NotifyTabDestroying(this);
+    Manager()->Manager()->AsContentParent()->NotifyTabDestroying(this);
   }
   mMarkedDestroying = true;
 }
@@ -319,7 +320,7 @@ bool
 TabParent::Recv__delete__()
 {
   if (XRE_GetProcessType() == GeckoProcessType_Default) {
-    Manager()->AsContentParent()->NotifyTabDestroyed(this, mMarkedDestroying);
+    Manager()->Manager()->AsContentParent()->NotifyTabDestroyed(this, mMarkedDestroying);
   }
   return true;
 }
@@ -1048,8 +1049,8 @@ TabParent::RecvSyncMessage(const nsString& aMessage,
 {
   // FIXME Permission check for TabParent in Content process
   nsIPrincipal* principal = aPrincipal;
-  if (Manager()->IsContentParent()) {
-    ContentParent* parent = Manager()->AsContentParent();
+  if (Manager()->Manager()->IsContentParent()) {
+    ContentParent* parent = Manager()->Manager()->AsContentParent();
     if (!ContentParent::IgnoreIPCPrincipal() &&
         parent && principal && !AssertAppPrincipal(parent, principal)) {
       return false;
@@ -1070,8 +1071,8 @@ TabParent::AnswerRpcMessage(const nsString& aMessage,
 {
   // FIXME Permission check for TabParent in Content process
   nsIPrincipal* principal = aPrincipal;
-  if (Manager()->IsContentParent()) {
-    ContentParent* parent = Manager()->AsContentParent();
+  if (Manager()->Manager()->IsContentParent()) {
+    ContentParent* parent = Manager()->Manager()->AsContentParent();
     if (!ContentParent::IgnoreIPCPrincipal() &&
         parent && principal && !AssertAppPrincipal(parent, principal)) {
       return false;
@@ -1091,8 +1092,8 @@ TabParent::RecvAsyncMessage(const nsString& aMessage,
 {
   // FIXME Permission check for TabParent in Content process
   nsIPrincipal* principal = aPrincipal;
-  if (Manager()->IsContentParent()) {
-    ContentParent* parent = Manager()->AsContentParent();
+  if (Manager()->Manager()->IsContentParent()) {
+    ContentParent* parent = Manager()->Manager()->AsContentParent();
     if (!ContentParent::IgnoreIPCPrincipal() &&
         parent && principal && !AssertAppPrincipal(parent, principal)) {
       return false;
@@ -1788,7 +1789,7 @@ TabParent::RecvPIndexedDBConstructor(PIndexedDBParent* aActor,
   NS_ASSERTION(Manager(), "Null manager?!");
 
   nsRefPtr<IDBFactory> factory;
-  rv = IDBFactory::Create(window, aGroup, aASCIIOrigin, Manager(),
+  rv = IDBFactory::Create(window, aGroup, aASCIIOrigin, Manager()->Manager(),
                           getter_AddRefs(factory));
   NS_ENSURE_SUCCESS(rv, false);
 

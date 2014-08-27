@@ -42,31 +42,11 @@ public:
                                 const InfallibleTArray<jsipc::CpowEntry>& aCpows,
                                 const IPC::Principal& aPrincipal) MOZ_OVERRIDE;
 
-  virtual bool SendPBrowserConstructor(PBrowserChild* aActor,
-                                       const IPCTabContext& aContext,
-                                       const uint32_t& aChromeFlags,
-                                       const uint64_t& aID,
-                                       const bool& aIsForApp,
-                                       const bool& aIsForBrowser) MOZ_OVERRIDE;
-
 protected:
   virtual ~ContentBridgeChild();
 
   virtual PContentContentChild* AllocPContentContentChild() MOZ_OVERRIDE;
   virtual bool DeallocPContentContentChild(PContentContentChild* aChild) MOZ_OVERRIDE;
-
-  virtual PBrowserChild* AllocPBrowserChild(const IPCTabContext& aContext,
-                                            const uint32_t& aChromeFlags,
-                                            const uint64_t& aID,
-                                            const bool& aIsForApp,
-                                            const bool& aIsForBrowser) MOZ_OVERRIDE;
-  virtual bool DeallocPBrowserChild(PBrowserChild*) MOZ_OVERRIDE;
-  virtual bool RecvPBrowserConstructor(PBrowserChild* aCctor,
-                                       const IPCTabContext& aContext,
-                                       const uint32_t& aChromeFlags,
-                                       const uint64_t& aID,
-                                       const bool& aIsForApp,
-                                       const bool& aIsForBrowser) MOZ_OVERRIDE;
 
   DISALLOW_EVIL_CONSTRUCTORS(ContentBridgeChild);
 

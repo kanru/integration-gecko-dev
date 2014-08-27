@@ -303,13 +303,6 @@ private:
 
     // Hide the raw constructor methods since we don't want client code
     // using them.
-    virtual PBrowserParent* SendPBrowserConstructor(
-        PBrowserParent* actor,
-        const IPCTabContext& context,
-        const uint32_t& chromeFlags,
-        const uint64_t& aId,
-        const bool& aIsForApp,
-        const bool& aIsForBrowser) MOZ_OVERRIDE;
     using PContentParent::SendPTestShellConstructor;
 
     // No more than one of !!aApp, aIsForBrowser, and aIsForPreallocated may be
@@ -403,12 +396,6 @@ private:
     virtual bool RecvGetXPCOMProcessAttributes(bool* aIsOffline) MOZ_OVERRIDE;
 
     virtual bool DeallocPRemoteSpellcheckEngineParent(PRemoteSpellcheckEngineParent*) MOZ_OVERRIDE;
-    virtual PBrowserParent* AllocPBrowserParent(const IPCTabContext& aContext,
-                                                const uint32_t& aChromeFlags,
-                                                const uint64_t& aId,
-                                                const bool& aIsForApp,
-                                                const bool& aIsForBrowser) MOZ_OVERRIDE;
-    virtual bool DeallocPBrowserParent(PBrowserParent* frame) MOZ_OVERRIDE;
 
     virtual PDeviceStorageRequestParent*
     AllocPDeviceStorageRequestParent(const DeviceStorageParams&) MOZ_OVERRIDE;

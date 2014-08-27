@@ -84,22 +84,6 @@ ContentBridgeChild::RecvAsyncMessage(const nsString& aMsg,
   return nsIContentChild::RecvAsyncMessage(aMsg, aData, aCpows, aPrincipal);
 }
 
-bool
-ContentBridgeChild::SendPBrowserConstructor(PBrowserChild* aActor,
-                                            const IPCTabContext& aContext,
-                                            const uint32_t& aChromeFlags,
-                                            const uint64_t& aID,
-                                            const bool& aIsForApp,
-                                            const bool& aIsForBrowser)
-{
-  return PContentBridgeChild::SendPBrowserConstructor(aActor,
-                                                      aContext,
-                                                      aChromeFlags,
-                                                      aID,
-                                                      aIsForApp,
-                                                      aIsForBrowser);
-}
-
 PContentContentChild*
 ContentBridgeChild::AllocPContentContentChild()
 {
@@ -115,41 +99,22 @@ ContentBridgeChild::DeallocPContentContentChild(PContentContentChild* aChild)
   return true;
 }
 
-PBrowserChild*
-ContentBridgeChild::AllocPBrowserChild(const IPCTabContext &aContext,
-                                       const uint32_t& aChromeFlags,
-                                       const uint64_t& aID,
-                                       const bool& aIsForApp,
-                                       const bool& aIsForBrowser)
-{
-  return nsIContentChild::AllocPBrowserChild(aContext,
-                                             aChromeFlags,
-                                             aID,
-                                             aIsForApp,
-                                             aIsForBrowser);
-}
-
-bool
-ContentBridgeChild::DeallocPBrowserChild(PBrowserChild* aChild)
-{
-  return nsIContentChild::DeallocPBrowserChild(aChild);
-}
-
-bool
-ContentBridgeChild::RecvPBrowserConstructor(PBrowserChild* aActor,
-                                            const IPCTabContext& aContext,
-                                            const uint32_t& aChromeFlags,
-                                            const uint64_t& aID,
-                                            const bool& aIsForApp,
-                                            const bool& aIsForBrowser)
-{
-  return ContentChild::GetSingleton()->RecvPBrowserConstructor(aActor,
-                                                               aContext,
-                                                               aChromeFlags,
-                                                               aID,
-                                                               aIsForApp,
-                                                               aIsForBrowser);
-}
+// // XXX
+// bool
+// ContentBridgeChild::RecvPBrowserConstructor(PBrowserChild* aActor,
+//                                             const IPCTabContext& aContext,
+//                                             const uint32_t& aChromeFlags,
+//                                             const uint64_t& aID,
+//                                             const bool& aIsForApp,
+//                                             const bool& aIsForBrowser)
+// {
+//   return ContentChild::GetSingleton()->RecvPBrowserConstructor(aActor,
+//                                                                aContext,
+//                                                                aChromeFlags,
+//                                                                aID,
+//                                                                aIsForApp,
+//                                                                aIsForBrowser);
+// }
 
 } // namespace dom
 } // namespace mozilla

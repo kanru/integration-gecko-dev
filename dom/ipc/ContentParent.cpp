@@ -966,11 +966,13 @@ ContentParent::CreateBrowserOrApp(const TabContext& aContext,
                 chromeFlags |= nsIWebBrowserChrome::CHROME_PRIVATE_LIFETIME;
             }
 
-            nsRefPtr<TabParent> tp(new TabParent(constructorSender,
-                                                 aContext, chromeFlags));
+            nsRefPtr<ContentContentParent> cp =
+                constructorSender->ContentContent();
+
+            nsRefPtr<TabParent> tp(new TabParent(cp, aContext, chromeFlags));
             tp->SetOwnerElement(aFrameElement);
 
-            PBrowserParent* browser = constructorSender->SendPBrowserConstructor(
+            PBrowserParent* browser = cp->SendPBrowserConstructor(
                 // DeallocPBrowserParent() releases this ref.
                 tp.forget().take(),
                 aContext.AsIPCTabContext(),
@@ -1071,9 +1073,10 @@ ContentParent::CreateBrowserOrApp(const TabContext& aContext,
 
     uint32_t chromeFlags = 0;
 
-    nsRefPtr<TabParent> tp = new TabParent(parent, aContext, chromeFlags);
+    nsRefPtr<ContentContentParent> cp = parent->ContentContent();
+    nsRefPtr<TabParent> tp = new TabParent(cp, aContext, chromeFlags);
     tp->SetOwnerElement(aFrameElement);
-    PBrowserParent* browser = parent->SendPBrowserConstructor(
+    PBrowserParent* browser = cp->SendPBrowserConstructor(
         // DeallocPBrowserParent() releases this ref.
         nsRefPtr<TabParent>(tp).forget().take(),
         aContext.AsIPCTabContext(),
@@ -1726,7 +1729,7 @@ ContentParent::NotifyTabDestroying(PBrowserParent* aTab)
     // concurrently.  When all the PBrowsers are destroying, kick off
     // another task to ensure the child process *really* shuts down,
     // even if the PBrowsers themselves never finish destroying.
-    int32_t numLiveTabs = ManagedPBrowserParent().Length();
+    int32_t numLiveTabs = ContentContent()->ManagedPBrowserParent().Length();
     ++mNumDestroyingTabs;
     if (mNumDestroyingTabs != numLiveTabs) {
         return;
@@ -1758,7 +1761,7 @@ ContentParent::NotifyTabDestroyed(PBrowserParent* aTab,
     // There can be more than one PBrowser for a given app process
     // because of popup windows.  When the last one closes, shut
     // us down.
-    if (ManagedPBrowserParent().Length() == 1) {
+    if (ContentContent()->ManagedPBrowserParent().Length() == 1) {
         MessageLoop::current()->PostTask(
             FROM_HERE,
             NewRunnableMethod(this, &ContentParent::ShutDownProcess,
@@ -2717,26 +2720,6 @@ ContentParent::DeallocPContentContentParent(PContentContentParent* aParent)
     return true;
 }
 
-PBrowserParent*
-ContentParent::AllocPBrowserParent(const IPCTabContext& aContext,
-                                   const uint32_t& aChromeFlags,
-                                   const uint64_t& aId,
-                                   const bool& aIsForApp,
-                                   const bool& aIsForBrowser)
-{
-    return nsIContentParent::AllocPBrowserParent(aContext,
-                                                 aChromeFlags,
-                                                 aId,
-                                                 aIsForApp,
-                                                 aIsForBrowser);
-}
-
-bool
-ContentParent::DeallocPBrowserParent(PBrowserParent* frame)
-{
-    return nsIContentParent::DeallocPBrowserParent(frame);
-}
-
 PDeviceStorageRequestParent*
 ContentParent::AllocPDeviceStorageRequestParent(const DeviceStorageParams& aParams)
 {
@@ -3634,22 +3617,6 @@ ContentParent::RecvSystemMessageHandled()
 {
     SystemMessageHandledListener::OnSystemMessageHandled();
     return true;
-}
-
-PBrowserParent*
-ContentParent::SendPBrowserConstructor(PBrowserParent* aActor,
-                                       const IPCTabContext& aContext,
-                                       const uint32_t& aChromeFlags,
-                                       const uint64_t& aId,
-                                       const bool& aIsForApp,
-                                       const bool& aIsForBrowser)
-{
-    return PContentParent::SendPBrowserConstructor(aActor,
-                                                   aContext,
-                                                   aChromeFlags,
-                                                   aId,
-                                                   aIsForApp,
-                                                   aIsForBrowser);
 }
 
 bool
