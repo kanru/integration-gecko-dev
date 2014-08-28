@@ -27,6 +27,7 @@ class nsDOMCameraManager;
 class nsDOMDeviceStorage;
 class nsIDOMBlob;
 class nsIPrincipal;
+class nsIMemoryProfiler;
 
 namespace mozilla {
 namespace dom {
@@ -299,6 +300,8 @@ public:
   }
 
   virtual JSObject* WrapObject(JSContext* cx) MOZ_OVERRIDE;
+
+  nsIMemoryProfiler* Memprofiler();
 
 private:
   virtual ~Navigator();

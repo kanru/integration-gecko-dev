@@ -5,10 +5,20 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "MemoryProfiler.h"
+#include "nsIDOMClassInfo.h"
 
 #include "nsIGlobalObject.h"
 
-NS_IMPL_ISUPPORTS(MemoryEntry, nsIMemoryEntry)
+DOMCI_DATA(MemoryEntry, MemoryEntry)
+
+NS_INTERFACE_MAP_BEGIN(MemoryEntry)
+  NS_INTERFACE_MAP_ENTRY(nsIMemoryEntry)
+  NS_INTERFACE_MAP_ENTRY(nsISupports)
+  NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(MemoryEntry)
+NS_INTERFACE_MAP_END
+
+NS_IMPL_ADDREF(MemoryEntry)
+NS_IMPL_RELEASE(MemoryEntry)
 
 MemoryEntry::MemoryEntry()
 {
@@ -38,7 +48,16 @@ MemoryEntry::GetTimeStamp(uint32_t* aTimeStamp)
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
-NS_IMPL_ISUPPORTS(MemoryProfiler, nsIMemoryProfiler)
+DOMCI_DATA(MemoryProfiler, MemoryProfiler)
+
+NS_INTERFACE_MAP_BEGIN(MemoryProfiler)
+  NS_INTERFACE_MAP_ENTRY(nsIMemoryProfiler)
+  NS_INTERFACE_MAP_ENTRY(nsISupports)
+  NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(MemoryProfiler)
+NS_INTERFACE_MAP_END
+
+NS_IMPL_ADDREF(MemoryProfiler)
+NS_IMPL_RELEASE(MemoryProfiler)
 
 MemoryProfiler::MemoryProfiler()
 {

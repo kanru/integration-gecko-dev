@@ -81,3 +81,6 @@ DOMCI_CLASS(XULLabeledControlElement)
 DOMCI_CLASS(XULButtonElement)
 DOMCI_CLASS(XULCheckboxElement)
 DOMCI_CLASS(XULPopupElement)
+
+DOMCI_CLASS(MemoryEntry)
+DOMCI_CLASS(MemoryProfiler)

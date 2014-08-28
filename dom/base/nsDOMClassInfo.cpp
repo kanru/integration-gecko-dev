@@ -142,6 +142,8 @@
 #include "mozilla/dom/EventTargetBinding.h"
 #include "mozilla/dom/WindowBinding.h"
 
+#include "nsIMemoryProfiler.h"
+
 #ifdef MOZ_TIME_MANAGER
 #include "TimeManager.h"
 #endif
@@ -392,6 +394,11 @@ static nsDOMClassInfoData sClassInfoData[] = {
                                       DOM_DEFAULT_SCRIPTABLE_FLAGS)
   NS_DEFINE_CHROME_XBL_CLASSINFO_DATA(XULPopupElement, nsDOMGenericSH,
                                       DOM_DEFAULT_SCRIPTABLE_FLAGS)
+
+  NS_DEFINE_CLASSINFO_DATA(MemoryEntry, nsDOMGenericSH,
+                           DOM_DEFAULT_SCRIPTABLE_FLAGS)
+  NS_DEFINE_CLASSINFO_DATA(MemoryProfiler, nsDOMGenericSH,
+                           DOM_DEFAULT_SCRIPTABLE_FLAGS)
 };
 
 #define NS_DEFINE_CONTRACT_CTOR(_class, _contract_id)                           \
@@ -988,6 +995,14 @@ nsDOMClassInfo::Init()
 
   DOM_CLASSINFO_MAP_BEGIN_NO_CLASS_IF(XULPopupElement, nsIDOMXULPopupElement)
     DOM_CLASSINFO_MAP_ENTRY(nsIDOMXULPopupElement)
+  DOM_CLASSINFO_MAP_END
+
+  DOM_CLASSINFO_MAP_BEGIN(MemoryEntry, nsIMemoryEntry)
+     DOM_CLASSINFO_MAP_ENTRY(nsIMemoryEntry)
+  DOM_CLASSINFO_MAP_END
+
+  DOM_CLASSINFO_MAP_BEGIN(MemoryProfiler, nsIMemoryProfiler)
+     DOM_CLASSINFO_MAP_ENTRY(nsIMemoryProfiler)
   DOM_CLASSINFO_MAP_END
 
   static_assert(MOZ_ARRAY_LENGTH(sClassInfoData) == eDOMClassInfoIDCount,

@@ -67,6 +67,7 @@
 #include "WidgetUtils.h"
 #include "mozIThirdPartyUtil.h"
 #include "nsChannelPolicy.h"
+#include "nsIMemoryProfiler.h"
 
 #ifdef MOZ_MEDIA_NAVIGATOR
 #include "MediaManager.h"
@@ -2039,6 +2040,14 @@ Navigator::CheckPermission(nsPIDOMWindow* aWindow, const char* aType)
   uint32_t permission = nsIPermissionManager::DENY_ACTION;
   permMgr->TestPermissionFromWindow(aWindow, aType, &permission);
   return permission == nsIPermissionManager::ALLOW_ACTION;
+}
+
+nsIMemoryProfiler*
+Navigator::Memprofiler()
+{
+  nsCOMPtr<nsIMemoryProfiler> memprof =
+    do_GetService("@mozilla.org/tools/memory-profiler;1");
+  return memprof;
 }
 
 #ifdef MOZ_AUDIO_CHANNEL_MANAGER
