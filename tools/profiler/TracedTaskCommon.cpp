@@ -65,13 +65,12 @@ TracedRunnable::TracedRunnable(nsIRunnable* aOriginalObj)
 NS_IMETHODIMP
 TracedRunnable::Run()
 {
-  LogBegin(mTaskId, mSourceEventId);
+  AutoLogTask logTask(mTaskId, mSourceEventId);
 
   SetTraceInfo();
   nsresult rv = mOriginalObj->Run();
   ClearTraceInfo();
 
-  LogEnd(mTaskId, mSourceEventId);
   return rv;
 }
 
@@ -88,13 +87,11 @@ TracedTask::TracedTask(Task* aOriginalObj)
 void
 TracedTask::Run()
 {
-  LogBegin(mTaskId, mSourceEventId);
+  AutoLogTask logTask(mTaskId, mSourceEventId);
 
   SetTraceInfo();
   mOriginalObj->Run();
   ClearTraceInfo();
-
-  LogEnd(mTaskId, mSourceEventId);
 }
 
 FakeTracedTask::FakeTracedTask(int* aVptr)

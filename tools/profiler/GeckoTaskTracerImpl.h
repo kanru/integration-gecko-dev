@@ -94,6 +94,16 @@ void LogEnd(uint64_t aTaskId, uint64_t aSourceEventId);
 
 void LogVirtualTablePtr(uint64_t aTaskId, uint64_t aSourceEventId, int* aVptr);
 
+class AutoLogTask
+{
+public:
+  AutoLogTask(uint64_t aTaskId, uint64_t aSourceEventId);
+  ~AutoLogTask();
+private:
+  uint64_t mTaskId;
+  uint64_t mSourceEventId;
+};
+
 } // namespace mozilla
 } // namespace tasktracer
 

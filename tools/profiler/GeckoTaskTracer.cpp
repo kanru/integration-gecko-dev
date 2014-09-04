@@ -330,6 +330,18 @@ LogEnd(uint64_t aTaskId, uint64_t aSourceEventId)
   TTLOG("%d %lld %lld %lld %lld", ACTION_END, aTaskId, PR_Now(), userCPUTime, sysCPUTime);
 }
 
+AutoLogTask::AutoLogTask(uint64_t aTaskId, uint64_t aSourceEventId)
+  : mTaskId(aTaskId)
+  , mSourceEventId(aSourceEventId)
+{
+  LogBegin(mTaskId, mSourceEventId);
+}
+
+AutoLogTask::~AutoLogTask()
+{
+  LogEnd(mTaskId, mSourceEventId);
+}
+
 void
 LogVirtualTablePtr(uint64_t aTaskId, uint64_t aSourceEventId, int* aVptr)
 {
