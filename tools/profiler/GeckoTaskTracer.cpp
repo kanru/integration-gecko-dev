@@ -88,19 +88,23 @@ LogToSocket(const char* aFormat, ...)
 {
   NS_ENSURE_TRUE_VOID(IsInitialized() && aFormat);
 
-  struct sockaddr_un address;
-  memset(&address, 0, sizeof(struct sockaddr_un));
-  address.sun_family = AF_UNIX;
-  snprintf(address.sun_path, pathconf("/", _PC_PATH_MAX), LOG_SOCKET_PATH);
   int socket_fd = socket(PF_UNIX, SOCK_DGRAM, 0);
-  connect(socket_fd, (struct sockaddr*)&address, sizeof(struct sockaddr_un));
 
   va_list args;
   char buffer[4096] = {0};
   va_start(args, aFormat);
   vsnprintf(buffer, 4096, aFormat, args);
   va_end(args);
-  write(socket_fd, &buffer, 4096);
+
+  struct sockaddr_un address;
+  memset(&address, 0, sizeof(struct sockaddr_un));
+  address.sun_family = AF_UNIX;
+  snprintf(address.sun_path, pathconf("/", _PC_PATH_MAX), LOG_SOCKET_PATH);
+
+  sendto(socket_fd, &buffer, 4096, 0,
+         (struct sockaddr*)&address,
+         sizeof(struct sockaddr_un));
+
   close(socket_fd);
 }
 
