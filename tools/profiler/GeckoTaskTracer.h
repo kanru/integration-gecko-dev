@@ -8,6 +8,7 @@
 #define GECKO_TASK_TRACER_H
 
 #include "nsCOMPtr.h"
+#include "mozilla/UniquePtr.h"
 
 /**
  * TaskTracer provides a way to trace the correlation between different tasks
@@ -41,11 +42,14 @@ enum SourceEventType {
   WIFI
 };
 
+class AutoSaveCurTraceInfo;
 class AutoSourceEvent
 {
 public:
   AutoSourceEvent(SourceEventType aType);
   ~AutoSourceEvent();
+private:
+  UniquePtr<AutoSaveCurTraceInfo> saveInfo;
 };
 
 // Add a label to the currently running task, aFormat is the message to log,

@@ -59,6 +59,10 @@ class AutoSaveCurTraceInfo
 public:
   AutoSaveCurTraceInfo();
   ~AutoSaveCurTraceInfo();
+private:
+  uint64_t mSourceId;
+  uint64_t mTaskId;
+  SourceEventType mSourceType;
 };
 
 void SetCurTraceInfo(uint64_t aSourceEventId, uint64_t aParentTaskId,

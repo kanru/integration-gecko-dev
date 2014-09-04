@@ -107,62 +107,6 @@ LogToSocket(const char* aFormat, ...)
 
   close(socket_fd);
 }
-
-static void
-SaveCurTraceInfo()
-{
-  TraceInfo* info = GetOrCreateTraceInfo();
-  NS_ENSURE_TRUE_VOID(info);
-
-  info->mSavedCurTraceSourceId = info->mCurTraceSourceId;
-  info->mSavedCurTraceSourceType = info->mCurTraceSourceType;
-  info->mSavedCurTaskId = info->mCurTaskId;
-}
-
-static void
-RestoreCurTraceInfo()
-{
-  TraceInfo* info = GetOrCreateTraceInfo();
-  NS_ENSURE_TRUE_VOID(info);
-
-  info->mCurTraceSourceId = info->mSavedCurTraceSourceId;
-  info->mCurTraceSourceType = info->mSavedCurTraceSourceType;
-  info->mCurTaskId = info->mSavedCurTaskId;
-}
-
-static void
-CreateSourceEvent(SourceEventType aType)
-{
-  NS_ENSURE_TRUE_VOID(IsInitialized());
-
-  // Save the currently traced source event info.
-  SaveCurTraceInfo();
-
-  // Create a new unique task id.
-  uint64_t newId = GenNewUniqueTaskId();
-  TraceInfo* info = GetOrCreateTraceInfo();
-  info->mCurTraceSourceId = newId;
-  info->mCurTraceSourceType = aType;
-  info->mCurTaskId = newId;
-
-  // Log a fake dispatch and start for this source event.
-  LogDispatch(newId, newId, newId, aType);
-  LogBegin(newId, newId);
-}
-
-static void
-DestroySourceEvent()
-{
-  NS_ENSURE_TRUE_VOID(IsInitialized());
-
-  // Log a fake end for this source event.
-  TraceInfo* info = GetOrCreateTraceInfo();
-  LogEnd(info->mCurTraceSourceId, info->mCurTraceSourceId);
-
-  // Restore the previously saved source event info.
-  RestoreCurTraceInfo();
-}
-
 } // namespace anonymous
 
 void
@@ -211,12 +155,22 @@ GenNewUniqueTaskId()
 
 AutoSaveCurTraceInfo::AutoSaveCurTraceInfo()
 {
-  SaveCurTraceInfo();
+  TraceInfo* info = GetOrCreateTraceInfo();
+  NS_ENSURE_TRUE_VOID(info);
+
+  mSourceId = info->mCurTraceSourceId;
+  mSourceType = info->mCurTraceSourceType;
+  mTaskId = info->mCurTaskId;
 }
 
 AutoSaveCurTraceInfo::~AutoSaveCurTraceInfo()
 {
-  RestoreCurTraceInfo();
+  TraceInfo* info = GetOrCreateTraceInfo();
+  NS_ENSURE_TRUE_VOID(info);
+
+  info->mCurTraceSourceId = mSourceId;
+  info->mCurTraceSourceType = mSourceType;
+  info->mCurTaskId = mTaskId;
 }
 
 void
@@ -366,12 +320,28 @@ FreeTraceInfo()
 
 AutoSourceEvent::AutoSourceEvent(SourceEventType aType)
 {
-  CreateSourceEvent(aType);
+  NS_ENSURE_TRUE_VOID(IsInitialized());
+
+  saveInfo = MakeUnique<AutoSaveCurTraceInfo>();
+  // Create a new unique task id.
+  uint64_t newId = GenNewUniqueTaskId();
+  TraceInfo* info = GetOrCreateTraceInfo();
+  info->mCurTraceSourceId = newId;
+  info->mCurTraceSourceType = aType;
+  info->mCurTaskId = newId;
+
+  // Log a fake dispatch and start for this source event.
+  LogDispatch(newId, newId, newId, aType);
+  LogBegin(newId, newId);
 }
 
 AutoSourceEvent::~AutoSourceEvent()
 {
-  DestroySourceEvent();
+  NS_ENSURE_TRUE_VOID(IsInitialized());
+
+  // Log a fake end for this source event.
+  TraceInfo* info = GetOrCreateTraceInfo();
+  LogEnd(info->mCurTraceSourceId, info->mCurTraceSourceId);
 }
 
 void AddLabel(const char* aFormat, ...)
