@@ -14,6 +14,9 @@
 #include "nsClassHashtable.h"
 #include "nsThreadUtils.h"
 
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -30,7 +33,7 @@
 
 #ifdef MOZ_WIDGET_GONK
 #include <android/log.h>
-#define TTLOG(args...) __android_log_print(ANDROID_LOG_INFO, "TaskTracer", args)
+#define TTLOG(args...) LogToSocket(args)
 #else
 #define TTLOG(args...)
 #endif
@@ -52,6 +55,8 @@ namespace tasktracer {
 static mozilla::ThreadLocal<TraceInfo*> sTraceInfoTLS;
 static StaticMutex sMutex;
 static nsClassHashtable<nsUint32HashKey, TraceInfo>* sTraceInfos = nullptr;
+
+static char LOG_SOCKET_PATH[] = "/data/local/tmp/ttlog_socket";
 
 namespace {
 
@@ -76,6 +81,27 @@ static bool
 IsInitialized()
 {
   return sTraceInfoTLS.initialized();
+}
+
+static void
+LogToSocket(const char* aFormat, ...)
+{
+  NS_ENSURE_TRUE_VOID(IsInitialized() && aFormat);
+
+  struct sockaddr_un address;
+  memset(&address, 0, sizeof(struct sockaddr_un));
+  address.sun_family = AF_UNIX;
+  snprintf(address.sun_path, pathconf("/", _PC_PATH_MAX), LOG_SOCKET_PATH);
+  int socket_fd = socket(PF_UNIX, SOCK_DGRAM, 0);
+  connect(socket_fd, (struct sockaddr*)&address, sizeof(struct sockaddr_un));
+
+  va_list args;
+  char buffer[4096] = {0};
+  va_start(args, aFormat);
+  vsnprintf(buffer, 4096, aFormat, args);
+  va_end(args);
+  write(socket_fd, &buffer, 4096);
+  close(socket_fd);
 }
 
 static void
@@ -116,7 +142,7 @@ CreateSourceEvent(SourceEventType aType)
   info->mCurTaskId = newId;
 
   // Log a fake dispatch and start for this source event.
-  LogDispatch(newId, newId,newId, aType);
+  LogDispatch(newId, newId, newId, aType);
   LogBegin(newId, newId);
 }
 
