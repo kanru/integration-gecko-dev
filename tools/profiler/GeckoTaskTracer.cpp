@@ -89,6 +89,9 @@ LogToSocket(const char* aFormat, ...)
   NS_ENSURE_TRUE_VOID(IsInitialized() && aFormat);
 
   int socket_fd = socket(PF_UNIX, SOCK_DGRAM, 0);
+  if (socket_fd < 0) {
+    return;
+  }
 
   va_list args;
   char buffer[4096] = {0};
