@@ -34,6 +34,7 @@ public:
                             mozilla::dom::FromParser aFromParser)
     : nsGenericHTMLElement(aNodeInfo)
     , nsElementFrameLoaderOwner(aFromParser)
+    , nsBrowserElement()
   {
   }
 
@@ -70,6 +71,12 @@ public:
 
   NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED_NO_UNLINK(nsGenericHTMLFrameElement,
                                                      nsGenericHTMLElement)
+
+  // nsBrowserElement
+  virtual bool IsOwnFrameLoader(nsIFrameLoader* aFrameLoader) MOZ_OVERRIDE
+  {
+    return mFrameLoader == aFrameLoader;
+  }
 
   static bool BrowserFramesEnabled();
 

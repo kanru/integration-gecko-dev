@@ -10,6 +10,10 @@
 #include "mozilla/dom/BindingDeclarations.h"
 
 #include "nsCOMPtr.h"
+#include "nsIBrowserElementAPI.h"
+#include "nsIFrameLoader.h"
+
+class nsIObserver;
 
 namespace mozilla {
 
@@ -30,6 +34,10 @@ public:
   static bool TouchEnabled(JSContext* cx, JSObject* obj);
 
 public:
+  nsBrowserElement();
+  virtual ~nsBrowserElement();
+  virtual bool IsOwnFrameLoader(nsIFrameLoader* aFrameLoader) = 0;
+
   void SetVisible(bool aVisible, ErrorResult& aRv);
   already_AddRefed<DOMRequest> GetVisible(ErrorResult& aRv);
   void SetActive(bool aActive, ErrorResult& aRv);
@@ -59,7 +67,8 @@ public:
   void Stop(ErrorResult& aRv);
 
   already_AddRefed<DOMRequest>
-  Download(const nsAString& aUrl,
+  Download(JSContext* aCx,
+           const nsAString& aUrl,
            const BrowserElementDownloadOptions& options,
            ErrorResult& aRv);
 
@@ -84,6 +93,16 @@ public:
 
   already_AddRefed<DOMRequest> SetInputMethodActive(bool isActive,
                                                     ErrorResult& aRv);
+
+private:
+  void SetFrameLoader(nsIFrameLoader* aFrameLoader);
+  bool IsBrowserElementOrThrow(ErrorResult& aRv);
+  nsIFrameLoader* mFrameLoaderPtr; // owned
+  nsCOMPtr<nsIBrowserElementAPI> mBrowserElementAPI;
+  nsCOMPtr<nsIObserver> mObserver;
+
+  class BrowserShownObserver;
+  friend class BrowserShownObserver;
 };
 
 } // namespace dom
