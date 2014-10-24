@@ -353,7 +353,7 @@ nsFrameLoader::ReallyStartLoadingInternal()
     if (!mRemoteBrowser) {
       if (!mPendingFrameSent) {
         nsCOMPtr<nsIObserverService> os = services::GetObserverService();
-        if (os && !mRemoteBrowserInitialized) {
+        if (os) {
           os->NotifyObservers(NS_ISUPPORTS_CAST(nsIFrameLoader*, this),
                               "remote-browser-pending", nullptr);
           mPendingFrameSent = true;
@@ -885,18 +885,19 @@ nsFrameLoader::ShowRemoteFrame(const nsIntSize& size,
       return false;
     }
 
+    nsCOMPtr<nsIObserverService> os = services::GetObserverService();
+    if (os && !mPendingFrameSent) {
+      os->NotifyObservers(NS_ISUPPORTS_CAST(nsIFrameLoader*, this),
+                          "remote-browser-pending", nullptr);
+      mPendingFrameSent = true;
+    }
+
     mRemoteBrowser->Show(size);
     mRemoteBrowserShown = true;
 
     EnsureMessageManager();
 
-    nsCOMPtr<nsIObserverService> os = services::GetObserverService();
     if (os && !mRemoteBrowserInitialized) {
-      if (!mPendingFrameSent) {
-        os->NotifyObservers(NS_ISUPPORTS_CAST(nsIFrameLoader*, this),
-                            "remote-browser-pending", nullptr);
-        mPendingFrameSent = true;
-      }
       os->NotifyObservers(NS_ISUPPORTS_CAST(nsIFrameLoader*, this),
                           "remote-browser-shown", nullptr);
       mRemoteBrowserInitialized = true;
