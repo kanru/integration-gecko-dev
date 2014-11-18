@@ -530,6 +530,11 @@ var DebuggerServer = {
       constructor: "MemoryActor",
       type: { global: true, tab: true }
     });
+    this.registerModule("devtools/server/actors/memprof", {
+      prefix: "memprof",
+      constructor: "MemprofActor",
+      type: { global: true, tab: true }
+    });
     this.registerModule("devtools/server/actors/framerate", {
       prefix: "framerate",
       constructor: "FramerateActor",
