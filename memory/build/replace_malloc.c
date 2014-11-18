@@ -131,13 +131,38 @@ init()
     replace_init(&malloc_table);
 }
 
+void (*_allocHook)(void *, size_t);
+void (*_freeHook)(void *);
+
+__attribute__((visibility("default")))
+void ReplaceMallocHook(void (*alloc)(void *p, size_t), void (*free)(void *p))
+{
+    _allocHook = alloc;
+    _freeHook = free;
+}
+
+static void AllocHook(void *p, size_t size)
+{
+    if (_allocHook)
+        _allocHook(p, size);
+}
+
+static void FreeHook(void *p)
+{
+    if (_freeHook)
+        _freeHook(p);
+}
+
 void*
 malloc_impl(size_t size)
 {
   if (MOZ_UNLIKELY(!replace_malloc_initialized))
     init();
-  if (MOZ_LIKELY(!replace_malloc))
-    return je_malloc(size);
+  if (MOZ_LIKELY(!replace_malloc)) {
+    void *p = je_malloc(size);
+    AllocHook(p, size);
+    return p;
+  }
   return replace_malloc(size);
 }
 
@@ -146,8 +171,11 @@ posix_memalign_impl(void **memptr, size_t alignment, size_t size)
 {
   if (MOZ_UNLIKELY(!replace_malloc_initialized))
     init();
-  if (MOZ_LIKELY(!replace_posix_memalign))
-    return je_posix_memalign(memptr, alignment, size);
+  if (MOZ_LIKELY(!replace_posix_memalign)) {
+    int i = je_posix_memalign(memptr, alignment, size);
+    AllocHook(*memptr, size);
+    return i;
+  }
   return replace_posix_memalign(memptr, alignment, size);
 }
 
@@ -156,8 +184,11 @@ aligned_alloc_impl(size_t alignment, size_t size)
 {
   if (MOZ_UNLIKELY(!replace_malloc_initialized))
     init();
-  if (MOZ_LIKELY(!replace_aligned_alloc))
-    return je_aligned_alloc(alignment, size);
+  if (MOZ_LIKELY(!replace_aligned_alloc)) {
+    void *p = je_aligned_alloc(alignment, size);
+    AllocHook(p, size);
+    return p;
+  }
   return replace_aligned_alloc(alignment, size);
 }
 
@@ -166,8 +197,11 @@ calloc_impl(size_t num, size_t size)
 {
   if (MOZ_UNLIKELY(!replace_malloc_initialized))
     init();
-  if (MOZ_LIKELY(!replace_calloc))
-    return je_calloc(num, size);
+  if (MOZ_LIKELY(!replace_calloc)) {
+    void *p = je_calloc(num, size);
+    AllocHook(p, num * size);
+    return p;
+  }
   return replace_calloc(num, size);
 }
 
@@ -176,8 +210,12 @@ realloc_impl(void *ptr, size_t size)
 {
   if (MOZ_UNLIKELY(!replace_malloc_initialized))
     init();
-  if (MOZ_LIKELY(!replace_realloc))
-    return je_realloc(ptr, size);
+  if (MOZ_LIKELY(!replace_realloc)) {
+    void *p = je_realloc(ptr, size);
+    FreeHook(ptr);
+    AllocHook(p, size);
+    return p;
+  }
   return replace_realloc(ptr, size);
 }
 
@@ -186,9 +224,10 @@ free_impl(void *ptr)
 {
   if (MOZ_UNLIKELY(!replace_malloc_initialized))
     init();
-  if (MOZ_LIKELY(!replace_free))
+  if (MOZ_LIKELY(!replace_free)) {
     je_free(ptr);
-  else
+    FreeHook(ptr);
+  } else
     replace_free(ptr);
 }
 
@@ -197,8 +236,11 @@ memalign_impl(size_t alignment, size_t size)
 {
   if (MOZ_UNLIKELY(!replace_malloc_initialized))
     init();
-  if (MOZ_LIKELY(!replace_memalign))
-    return je_memalign(alignment, size);
+  if (MOZ_LIKELY(!replace_memalign)) {
+    void *p = je_memalign(alignment, size);
+    AllocHook(p, size);
+    return p;
+  }
   return replace_memalign(alignment, size);
 }
 
@@ -207,8 +249,11 @@ valloc_impl(size_t size)
 {
   if (MOZ_UNLIKELY(!replace_malloc_initialized))
     init();
-  if (MOZ_LIKELY(!replace_valloc))
-    return je_valloc(size);
+  if (MOZ_LIKELY(!replace_valloc)) {
+    void *p = je_valloc(size);
+    AllocHook(p, size);
+    return p;
+  }
   return replace_valloc(size);
 }
 
